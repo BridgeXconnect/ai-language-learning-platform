@@ -1,0 +1,87 @@
+[tool.poetry]
+name = "dynamic-english-course-creator-server"
+version = "0.1.0"
+description = "Backend server for the Dynamic English Course Creator App"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+Flask = "^2.3.0"
+Flask-SQLAlchemy = "^3.0.0"
+Flask-JWT-Extended = "^4.5.0"
+Flask-CORS = "^4.0.0"
+Flask-Migrate = "^4.0.0"
+python-dotenv = "^1.0.0"
+psycopg2-binary = "^2.9.0"
+werkzeug = "^2.3.0"
+bcrypt = "^4.0.0"
+marshmallow = "^3.20.0"
+flask-marshmallow = "^0.15.0"
+marshmallow-sqlalchemy = "^0.29.0"
+celery = "^5.3.0"
+redis = "^4.6.0"
+gunicorn = "^21.2.0"
+openai = "^0.28.0"
+anthropic = "^0.3.0"
+langchain = "^0.0.300"
+pinecone-client = "^2.2.0"
+sentence-transformers = "^2.2.0"
+PyPDF2 = "^3.0.0"
+python-docx = "^0.8.0"
+openpyxl = "^3.1.0"
+spacy = "^3.7.0"
+nltk = "^3.8.0"
+transformers = "^4.33.0"
+torch = "^2.0.0"
+scikit-learn = "^1.3.0"
+pandas = "^2.1.0"
+numpy = "^1.24.0"
+requests = "^2.31.0"
+email-validator = "^2.0.0"
+python-multipart = "^0.0.6"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-flask = "^1.2.0"
+pytest-cov = "^4.1.0"
+black = "^23.7.0"
+flake8 = "^6.0.0"
+mypy = "^1.5.0"
+pre-commit = "^3.3.0"
+factory-boy = "^3.3.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+addopts = "--cov=app --cov-report=html --cov-report=term-missing"

@@ -1,0 +1,95 @@
+# Multi-stage build for production
+FROM python:3.11-slim AS builder
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    gcc \
+    g++ \
+    libpq-dev \
+    libffi-dev \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set work directory
+WORKDIR /app
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Production stage
+FROM python:3.11-slim AS production
+
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH="/app" \
+    PATH="/app/.local/bin:$PATH"
+
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    libpq5 \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r appuser && useradd -r -g appuser appuser
+
+# Set work directory
+WORKDIR /app
+
+# Copy Python packages from builder
+COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+# Copy application code
+COPY . .
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/uploads /app/models /app/temp && \
+    chown -R appuser:appuser /app
+
+# Create gunicorn configuration
+RUN echo 'bind = "0.0.0.0:8000"' > /app/gunicorn.conf.py && \
+    echo 'workers = 4' >> /app/gunicorn.conf.py && \
+    echo 'worker_class = "uvicorn.workers.UvicornWorker"' >> /app/gunicorn.conf.py && \
+    echo 'worker_connections = 1000' >> /app/gunicorn.conf.py && \
+    echo 'max_requests = 1000' >> /app/gunicorn.conf.py && \
+    echo 'max_requests_jitter = 100' >> /app/gunicorn.conf.py && \
+    echo 'timeout = 120' >> /app/gunicorn.conf.py && \
+    echo 'keepalive = 2' >> /app/gunicorn.conf.py && \
+    echo 'preload_app = True' >> /app/gunicorn.conf.py && \
+    echo 'accesslog = "/app/logs/access.log"' >> /app/gunicorn.conf.py && \
+    echo 'errorlog = "/app/logs/error.log"' >> /app/gunicorn.conf.py && \
+    echo 'loglevel = "info"' >> /app/gunicorn.conf.py
+
+# Health check script
+RUN echo '#!/bin/bash' > /app/healthcheck.sh && \
+    echo 'curl -f http://localhost:8000/health || exit 1' >> /app/healthcheck.sh && \
+    chmod +x /app/healthcheck.sh
+
+# Database migration script
+RUN echo '#!/bin/bash' > /app/migrate.sh && \
+    echo 'python -c "from app.database import engine; from app.models import user, course, sales; from sqlalchemy import text; engine.execute(text(\"SELECT 1\"))"' >> /app/migrate.sh && \
+    echo 'python app/init_db.py' >> /app/migrate.sh && \
+    chmod +x /app/migrate.sh
+
+# Switch to non-root user
+USER appuser
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD /app/healthcheck.sh
+
+# Expose port
+EXPOSE 8000
+
+# Start command
+CMD ["gunicorn", "-c", "gunicorn.conf.py", "app.main:app"]
