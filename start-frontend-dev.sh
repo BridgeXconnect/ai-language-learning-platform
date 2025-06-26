@@ -17,5 +17,5 @@ if [ ! -d "client/Frontend/next-theme-setup (1)/node_modules" ]; then
 fi
 
 # Start the Next.js development server
-echo "Starting Next.js development server..."
-cd "client/Frontend/next-theme-setup (1)" && npm run dev 
+echo "Starting Next.js development server on port 3001..."
+cd "client/Frontend/next-theme-setup (1)" && npm run dev -- -p 3001 

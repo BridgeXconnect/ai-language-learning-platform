@@ -31,7 +31,11 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: Optional[str] = None
     
     # Security settings
-    CORS_ORIGINS: list = ["http://localhost:3000"]
+    CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
+    
+    @property
+    def cors_origins_list(self) -> list:
+        return [origin.strip() for origin in self.CORS_ORIGINS.split(",")]
     API_KEY_HEADER: str = "X-API-Key"
     RATE_LIMIT_REQUESTS: int = 100
     RATE_LIMIT_PERIOD: int = 60  # seconds

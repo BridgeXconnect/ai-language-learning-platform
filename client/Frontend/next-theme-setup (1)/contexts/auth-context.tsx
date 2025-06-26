@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { authApi } from "@/lib/api"
+import { authApi, testConnection } from "@/lib/api"
 import { User } from "@/lib/types"
 import { UserRole } from "@/lib/config"
 import { useToast } from "@/hooks/use-toast"
@@ -30,37 +30,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const userData = await authApi.getProfile()
-        setUser(userData)
+        // Only check if we have a token
+        const token = localStorage.getItem(AUTH_TOKEN_KEY)
+        if (token) {
+          const userData = await authApi.getProfile()
+          setUser(userData)
+        }
       } catch (error) {
-        // Silent fail on initial load
+        console.log("Auth check failed, user needs to login")
+        // Clear any invalid tokens
+        localStorage.removeItem(AUTH_TOKEN_KEY)
+        localStorage.removeItem('refresh_token')
       } finally {
         setIsLoading(false)
       }
     }
 
-    checkAuth()
+    // Add a small delay to prevent flash
+    const timer = setTimeout(checkAuth, 100)
+    return () => clearTimeout(timer)
   }, [])
 
   const login = async (credentials: { email: string; password: string }) => {
+    console.log("🚀 Auth context login initiated")
     setIsLoading(true)
+    
+    // Test backend connectivity first
+    const isConnected = await testConnection()
+    if (!isConnected) {
+      throw new Error("Cannot connect to server. Please check if the backend is running.")
+    }
+    
     try {
       const response = await authApi.login(credentials)
+      console.log("✅ API login successful, user:", response.user)
       setUser(response.user)
       
       // Redirect based on user role
-      if (response.user.roles.includes(UserRole.SALES)) {
+      const userRoles = response.user.roles
+      console.log("👤 User roles:", userRoles)
+      
+      if (userRoles.includes(UserRole.SALES)) {
+        console.log("🏢 Redirecting to sales portal")
         router.push("/sales")
-      } else if (response.user.roles.includes(UserRole.COURSE_MANAGER)) {
+      } else if (userRoles.includes(UserRole.COURSE_MANAGER)) {
+        console.log("📚 Redirecting to course manager portal")
         router.push("/course-manager")
-      } else if (response.user.roles.includes(UserRole.TRAINER)) {
+      } else if (userRoles.includes(UserRole.TRAINER)) {
+        console.log("👨‍🏫 Redirecting to trainer portal")
         router.push("/trainer")
-      } else if (response.user.roles.includes(UserRole.STUDENT)) {
+      } else if (userRoles.includes(UserRole.STUDENT)) {
+        console.log("🎓 Redirecting to student portal")
         router.push("/student")
       } else {
+        console.log("🏠 Redirecting to home")
         router.push("/")
       }
     } catch (error: any) {
+      console.error("❌ Auth context login failed:", error)
       toast({
         variant: "destructive",
         title: "Login failed",

@@ -10,13 +10,12 @@ import type { SOPFile } from "@/lib/types"
 import { SOPFileStatus } from "@/lib/types"
 
 interface FileUploadProps {
-  onFilesAdded: (files: SOPFile[]) => void
-  acceptedFileTypes?: Record<string, string[]> // e.g., { 'application/pdf': ['.pdf'] }
-  maxFileSizeMB?: number
+  onFilesSelected: (files: SOPFile[]) => void
+  onFileRemoved: (fileId: string) => void
+  uploadedFiles: SOPFile[]
+  acceptedTypes?: string[]
   maxFiles?: number
-  currentFiles: SOPFile[]
-  onFileRemove: (fileName: string) => void
-  // onFileUpload: (file: SOPFile) => Promise<void>; // For actual upload logic
+  maxFileSizeMB?: number
 }
 
 const defaultAcceptedTypes = {
@@ -27,18 +26,18 @@ const defaultAcceptedTypes = {
 }
 
 export function FileUpload({
-  onFilesAdded,
-  acceptedFileTypes = defaultAcceptedTypes,
-  maxFileSizeMB = 50,
+  onFilesSelected,
+  onFileRemoved,
+  uploadedFiles,
+  acceptedTypes = ['.pdf', '.doc', '.docx'],
   maxFiles = 5,
-  currentFiles,
-  onFileRemove,
+  maxFileSizeMB = 50,
 }: FileUploadProps) {
   const { toast } = useToast()
 
   const onDrop = useCallback(
     (acceptedFiles: File[], fileRejections: any[]) => {
-      if (currentFiles.length + acceptedFiles.length > maxFiles) {
+      if (uploadedFiles.length + acceptedFiles.length > maxFiles) {
         toast({
           variant: "destructive",
           title: "Too many files",
@@ -56,7 +55,7 @@ export function FileUpload({
         status: SOPFileStatus.PENDING,
         progress: 0,
       }))
-      onFilesAdded(newSopFiles)
+      onFilesSelected(newSopFiles)
 
       fileRejections.forEach((rejection: any) => {
         rejection.errors.forEach((error: any) => {
@@ -68,8 +67,15 @@ export function FileUpload({
         })
       })
     },
-    [onFilesAdded, maxFileSizeMB, maxFiles, currentFiles.length, toast],
+    [onFilesSelected, maxFileSizeMB, maxFiles, uploadedFiles.length, toast],
   )
+
+  const acceptedFileTypes = {
+    "application/pdf": [".pdf"],
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+    "application/msword": [".doc"],
+    "text/plain": [".txt"],
+  }
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -102,10 +108,10 @@ export function FileUpload({
         )}
       </div>
 
-      {currentFiles.length > 0 && (
+      {uploadedFiles.length > 0 && (
         <div className="space-y-2">
           <h4 className="text-sm font-medium">Uploaded Files:</h4>
-          {currentFiles.map((sopFile) => (
+          {uploadedFiles.map((sopFile) => (
             <div key={sopFile.id} className="flex items-center justify-between p-2 border rounded-md">
               <div className="flex items-center gap-2 overflow-hidden">
                 <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
@@ -122,7 +128,7 @@ export function FileUpload({
                 {sopFile.status === SOPFileStatus.UPLOADING || sopFile.status === SOPFileStatus.PROCESSING ? (
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />
                 ) : (
-                  <Button variant="ghost" size="icon" onClick={() => onFileRemove(sopFile.id)}>
+                  <Button variant="ghost" size="icon" onClick={() => onFileRemoved(sopFile.id)}>
                     <X className="h-4 w-4" />
                     <span className="sr-only">Remove file</span>
                   </Button>

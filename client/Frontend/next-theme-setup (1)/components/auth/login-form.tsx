@@ -39,16 +39,22 @@ export function LoginForm() {
   })
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    console.log("🔐 Login attempt started", { email: values.email })
     setIsSubmitting(true)
     try {
       await login({
         email: values.email,
         password: values.password,
       })
+      console.log("✅ Login successful")
       // Auth context handles redirection based on user role
     } catch (error: any) {
-      console.error("Login error:", error)
-      // Toast is handled by auth context
+      console.error("❌ Login error:", error)
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: error.message || "Please check your credentials and try again",
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -63,7 +69,12 @@ export function LoginForm() {
         </p>
       </div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <form 
+          onSubmit={form.handleSubmit(onSubmit)} 
+          className="space-y-4"
+          autoComplete="off"
+          data-lpignore="true"
+        >
           <FormField
             control={form.control}
             name="email"
@@ -74,8 +85,9 @@ export function LoginForm() {
                   <Input
                     placeholder="you@example.com"
                     type="email"
-                    autoComplete="email"
+                    autoComplete="new-email"
                     disabled={isSubmitting}
+                    data-lpignore="true"
                     {...field}
                   />
                 </FormControl>
@@ -93,8 +105,9 @@ export function LoginForm() {
                   <Input
                     placeholder="••••••••"
                     type="password"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     disabled={isSubmitting}
+                    data-lpignore="true"
                     {...field}
                   />
                 </FormControl>
