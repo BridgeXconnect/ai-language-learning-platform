@@ -36,14 +36,31 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=your-secret-key-here
       - FLASK_ENV=development
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AGENTS_ENABLED=true
+      - ORCHESTRATOR_URL=http://orchestrator:8100
+      - COURSE_PLANNER_URL=http://course-planner:8101
+      - CONTENT_CREATOR_URL=http://content-creator:8102
+      - QUALITY_ASSURANCE_URL=http://quality-assurance:8103
+      - FALLBACK_TO_TRADITIONAL=true
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+      orchestrator:
+        condition: service_healthy
     volumes:
       - ./server:/app
     command: python run.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
 
   frontend:
     build:
@@ -59,6 +76,116 @@ services:
       - ./client:/app
       - /app/node_modules
     command: npm run dev
+
+  # Multi-Agent System Services
+  orchestrator:
+    build:
+      context: ./agents/orchestrator
+      dockerfile: Dockerfile
+    ports:
+      - "8100:8100"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/ai_lang_db
+      - COURSE_PLANNER_URL=http://course-planner:8101
+      - CONTENT_CREATOR_URL=http://content-creator:8102
+      - QUALITY_ASSURANCE_URL=http://quality-assurance:8103
+      - AGENTS_ENABLED=true
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+      course-planner:
+        condition: service_healthy
+      content-creator:
+        condition: service_healthy
+      quality-assurance:
+        condition: service_healthy
+    volumes:
+      - ./agents/orchestrator:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  course-planner:
+    build:
+      context: ./agents/course-planner
+      dockerfile: Dockerfile
+    ports:
+      - "8101:8101"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/ai_lang_db
+      - AGENT_NAME=course_planner
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./agents/course-planner:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  content-creator:
+    build:
+      context: ./agents/content-creator
+      dockerfile: Dockerfile
+    ports:
+      - "8102:8102"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/ai_lang_db
+      - AGENT_NAME=content_creator
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./agents/content-creator:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8102/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  quality-assurance:
+    build:
+      context: ./agents/quality-assurance
+      dockerfile: Dockerfile
+    ports:
+      - "8103:8103"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/ai_lang_db
+      - AGENT_NAME=quality_assurance
+      - LOG_LEVEL=INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./agents/quality-assurance:/app
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8103/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
 
   vector-db:
     image: milvusdb/milvus:v2.3.0

@@ -35,11 +35,11 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = AuthService.authenticate_user(db, request.username, request.password)
+    user = AuthService.authenticate_user(db, request.email, request.password)
     if not user:
         raise HTTPException(
             status_code=HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password"
+            detail="Incorrect email or password"
         )
     
     if user.status != 'active':

@@ -56,7 +56,7 @@ async def generate_course(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Generate a complete course from a course request using AI."""
+    """Generate a complete course from a course request using AI (with agent support)."""
     
     # Verify user has permission to generate courses
     if not any(role.name in ["admin", "sales", "course_manager"] for role in current_user.roles):
@@ -70,7 +70,54 @@ async def generate_course(
     if not course_request:
         raise HTTPException(status_code=404, detail="Course request not found")
     
-    # Check if AI services are available
+    # Check agent preference and availability
+    use_agents = getattr(request, 'use_agents', True)  # Default to agents if available
+    agents_enabled = os.getenv("AGENTS_ENABLED", "true").lower() == "true"
+    
+    if use_agents and agents_enabled:
+        try:
+            # Try agent-based generation first
+            from app.routes.agent_routes import call_agent
+            
+            agent_request = {
+                "course_request_id": course_request.id,
+                "company_name": course_request.company_name,
+                "industry": course_request.industry or "General Business",
+                "training_goals": course_request.training_goals or "Improve English communication skills",
+                "current_english_level": course_request.current_english_level or "B1",
+                "duration_weeks": request.duration_weeks,
+                "target_audience": course_request.target_audience or "Professional staff",
+                "specific_needs": course_request.specific_needs
+            }
+            
+            logger.info(f"Attempting agent-based course generation for request {request.course_request_id}")
+            agent_result = await call_agent("orchestrator", "/orchestrate-course", agent_request)
+            
+            if agent_result.get("success", False):
+                workflow_result = agent_result.get("workflow_result", {})
+                
+                if workflow_result.get("status") == "completed":
+                    logger.info(f"Agent-based generation successful for request {request.course_request_id}")
+                    
+                    return CourseGenerationResponse(
+                        success=True,
+                        course_id=workflow_result.get("course_request_id"),
+                        message="Course generated successfully using multi-agent system",
+                        generation_method="multi_agent",
+                        workflow_id=workflow_result.get("workflow_id"),
+                        quality_score=workflow_result.get("quality_score"),
+                        processing_time_seconds=agent_result.get("processing_time_seconds"),
+                        modules_created=len(workflow_result.get("planning_result", {}).get("modules", [])),
+                        indexed_sources=0  # Will be updated based on agent result
+                    )
+            
+            # Agent generation failed, fall back to traditional
+            logger.warning(f"Agent generation failed, falling back to traditional AI: {agent_result.get('error', 'Unknown error')}")
+            
+        except Exception as e:
+            logger.warning(f"Agent generation failed with exception, falling back to traditional AI: {e}")
+    
+    # Traditional AI generation (fallback or by choice)
     if not ai_service.is_available():
         raise HTTPException(
             status_code=503,
@@ -80,7 +127,9 @@ async def generate_course(
     start_time = time.time()
     
     try:
-        # Generate course
+        logger.info(f"Using traditional AI generation for request {request.course_request_id}")
+        
+        # Generate course using traditional service
         result = await course_generation_service.generate_course_from_request(
             course_request_id=request.course_request_id,
             db=db,
@@ -90,7 +139,8 @@ async def generate_course(
                 "exercise_count_per_lesson": request.exercise_count_per_lesson,
                 "include_assessments": request.include_assessments,
                 "ai_model": request.ai_model,
-                "temperature": request.temperature
+                "temperature": request.temperature,
+                "use_agents": False  # Explicitly disable agents for traditional path
             }
         )
         

@@ -64,8 +64,8 @@ class AuthService:
             raise ValueError("Invalid token")
 
     @staticmethod
-    def authenticate_user(db: Session, username: str, password: str) -> Optional[User]:
-        user = db.query(User).filter(User.username == username).first()
+    def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
+        user = db.query(User).filter(User.email == email).first()
         if not user:
             return None
         if not AuthService.verify_password(password, user.password_hash):

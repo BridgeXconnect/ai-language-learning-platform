@@ -3,7 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from app.config import settings
 from app.database import engine, Base
-from app.routes import auth_routes, course_routes, sales_routes, ai_routes
+from app.routes import auth_routes, course_routes, sales_routes, ai_routes, agent_routes
+
+# Import all models to ensure they're registered with SQLAlchemy
+from app.models import user, sales
+from app.models.user import User, Role, Permission
+from app.models.sales import CourseRequest
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -39,6 +44,7 @@ app.include_router(auth_routes.router)
 app.include_router(course_routes.router)
 app.include_router(sales_routes.router)
 app.include_router(ai_routes.router)
+app.include_router(agent_routes.router)
 
 # Health check endpoint with CORS headers
 @app.get("/health")

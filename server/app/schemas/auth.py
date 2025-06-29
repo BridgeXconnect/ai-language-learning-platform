@@ -2,7 +2,7 @@ from typing import List, Optional
 from pydantic import BaseModel, EmailStr, constr
 
 class LoginRequest(BaseModel):
-    username: constr(min_length=3, max_length=80)
+    email: EmailStr
     password: constr(min_length=6)
 
 class RegisterRequest(BaseModel):
