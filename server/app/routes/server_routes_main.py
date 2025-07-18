@@ -8,8 +8,8 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 
 from app import db
-from app.models.user import User
-from app.models.course import CourseRequest, Course
+from app.domains.auth.models import User
+from app.domains.courses.models import CourseRequest, Course
 from app.models.enrollment import StudentEnrollment, TrainerAssignment
 
 main_bp = Blueprint('main', __name__)

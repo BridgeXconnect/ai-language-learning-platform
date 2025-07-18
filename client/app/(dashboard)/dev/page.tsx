@@ -109,7 +109,7 @@ export default function DevDashboard() {
 
   const generateV0PromptFromStory = (story: Story): string => {
     // Extract key information from story
-    const userStoryMatch = story.content.match(/\*\*As a\*\* (.+?)\s+\*\*I want\*\* (.+?)\s+\*\*So that\*\* (.+)/s);
+    const userStoryMatch = story.content.match(/\*\*As a\*\* (.+?)\s+\*\*I want\*\* (.+?)\s+\*\*So that\*\* ([\s\S]+?)(?:\n\n|\*\*|$)/);
     
     if (!userStoryMatch) {
       return `Create a React component for: ${story.title}`;

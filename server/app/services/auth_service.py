@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
 from typing import Optional, Dict
 import jwt
+from jwt.exceptions import InvalidTokenError
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from app.models.user import User
-from app.config import settings
-from app.database import get_db
+from app.domains.auth.models import User
+from app.core.config import settings
+from app.core.database import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
@@ -60,7 +61,7 @@ class AuthService:
             return payload
         except jwt.ExpiredSignatureError:
             raise ValueError("Token has expired")
-        except jwt.JWTError:
+        except InvalidTokenError:
             raise ValueError("Invalid token")
 
     @staticmethod

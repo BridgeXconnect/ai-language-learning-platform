@@ -60,9 +60,7 @@ The AI Language Learning Platform revolutionizes corporate English training by a
 ### Prerequisites
 
 - Node.js 18+
-- Python 3.10+
-- PostgreSQL 14+
-- Docker & Docker Compose
+- Python 3.9+
 - Git
 
 ### 1. Clone the Repository
@@ -72,72 +70,69 @@ git clone <repository-url>
 cd "AI Language Learning Platform"
 ```
 
-### 2. Environment Setup
+### 2. One-Time Setup
 
 ```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit with your configuration
-nano .env
+# Run the permanent setup script (creates virtual environment and installs dependencies)
+./setup-dev-env.sh
 ```
 
-### 3. Start with Docker (Recommended)
+### 3. Start the Application
 
 ```bash
-# Start all services
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
+# Start both frontend and backend
+./start-app.sh
 ```
 
-### 4. Manual Setup (Development)
-
-**Backend:**
-```bash
-cd server
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python run.py
-```
-
-**Frontend:**
-```bash
-cd client
-npm install
-npm run dev
-```
-
-**Agent Services:**
-```bash
-# Start each agent (in separate terminals)
-cd agents/orchestrator && python server.py
-cd agents/course-planner && python server.py
-cd agents/content-creator && python server.py
-cd agents/quality-assurance && python server.py
-```
-
-### 5. Initial Setup
+### 4. Stop the Application
 
 ```bash
-# Create database and default users
-cd server
-python quick_start.py
+# Stop all services
+./stop-app.sh
 ```
+
+### 5. Check Application Health
+
+```bash
+# Verify all services are running
+./health-check.sh
+```
+
+## 📋 Available Scripts
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `./start-app.sh` | Start full application | Daily development |
+| `./stop-app.sh` | Stop all services | When done working |
+| `./health-check.sh` | Check application status | Troubleshooting |
+| `./setup-dev-env.sh` | Setup development environment | One-time setup |
+
+## 🔧 Troubleshooting
+
+If you encounter any issues:
+
+1. **Check application health:**
+   ```bash
+   ./health-check.sh
+   ```
+
+2. **Re-setup environment:**
+   ```bash
+   ./setup-dev-env.sh
+   ```
+
+3. **View detailed setup guide:**
+   ```bash
+   cat PERMANENT_SETUP_GUIDE.md
+   ```
 
 ## 📱 Application Access
 
 | Service | URL | Description |
 |---------|-----|-------------|
 | **Frontend** | http://localhost:3000 | Main application interface |
-| **API Gateway** | http://localhost:8000 | Backend API |
+| **Backend API** | http://localhost:8000 | FastAPI backend |
 | **API Docs** | http://localhost:8000/docs | Interactive API documentation |
-| **Orchestrator** | http://localhost:8100 | Agent orchestration service |
-| **Course Planner** | http://localhost:8101 | Course planning agent |
-| **Content Creator** | http://localhost:8102 | Content generation agent |
-| **Quality Assurance** | http://localhost:8103 | QA validation agent |
 
 ## 👤 Default User Accounts
 

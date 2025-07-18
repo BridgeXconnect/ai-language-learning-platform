@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { PlusCircle, ListFilter, Download } from "lucide-react"
 import { NewCourseRequestWizard } from "@/components/dashboard/sales/new-course-request-wizard"
 import type { CourseRequest, ColumnDefinition } from "@/lib/types"
-import { CourseRequestStatus } from "@/lib/types"
+import { CourseRequestStatus, SOPFileStatus } from "@/lib/types"
 import { useAuth } from "@/contexts/auth-context"
 import { DataTable } from "@/components/shared/data-table" // We'll create this next
 import { Badge } from "@/components/ui/badge"
@@ -17,13 +17,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { format } from "date-fns"
+import { salesService } from "@/lib/api-services"
+
+// Map backend status to frontend status enum
+const mapBackendStatusToFrontend = (backendStatus: string): CourseRequestStatus => {
+  const statusMap: Record<string, CourseRequestStatus> = {
+    'draft': CourseRequestStatus.DRAFT,
+    'submitted': CourseRequestStatus.SUBMITTED, 
+    'under_review': CourseRequestStatus.UNDER_REVIEW,
+    'approved': CourseRequestStatus.APPROVED,
+    'rejected': CourseRequestStatus.REJECTED,
+    'generation_in_progress': CourseRequestStatus.GENERATION_IN_PROGRESS,
+    'completed': CourseRequestStatus.COMPLETED
+  };
+  return statusMap[backendStatus] || CourseRequestStatus.DRAFT;
+}
 
 // Mock data for now
 const mockCourseRequests: CourseRequest[] = [
   {
     id: "req_1",
     clientDetails: { companyName: "Acme Corp", contactPerson: "John Doe", email: "john@acme.com" },
-    sopFiles: [{ id: "sop_1", name: "Acme_SOP_v1.pdf", url: "/sops/Acme_SOP_v1.pdf" }],
+    sopFiles: [{ id: "sop_1", name: "Acme_SOP_v1.pdf", url: "/sops/Acme_SOP_v1.pdf", size: 1024, status: SOPFileStatus.COMPLETED }],
     status: CourseRequestStatus.SUBMITTED,
     requestedBy: "user_sales_1",
     requestedByName: "Alice Smith",
@@ -34,8 +49,8 @@ const mockCourseRequests: CourseRequest[] = [
     id: "req_2",
     clientDetails: { companyName: "Globex Inc.", contactPerson: "Jane Roe", email: "jane@globex.com" },
     sopFiles: [
-      { id: "sop_2a", name: "Globex_Onboarding.docx", url: "/sops/Globex_Onboarding.docx" },
-      { id: "sop_2b", name: "Globex_Sales_Playbook.pdf", url: "/sops/Globex_Sales_Playbook.pdf" },
+      { id: "sop_2a", name: "Globex_Onboarding.docx", url: "/sops/Globex_Onboarding.docx", size: 2048, status: SOPFileStatus.COMPLETED },
+      { id: "sop_2b", name: "Globex_Sales_Playbook.pdf", url: "/sops/Globex_Sales_Playbook.pdf", size: 4096, status: SOPFileStatus.COMPLETED },
     ],
     status: CourseRequestStatus.UNDER_REVIEW,
     requestedBy: "user_sales_2",
@@ -46,7 +61,7 @@ const mockCourseRequests: CourseRequest[] = [
   {
     id: "req_3",
     clientDetails: { companyName: "Initech", contactPerson: "Peter Gibbons", email: "peter@initech.com" },
-    sopFiles: [{ id: "sop_3", name: "TPS_Reports_Guide.pdf", url: "/sops/TPS_Reports_Guide.pdf" }],
+    sopFiles: [{ id: "sop_3", name: "TPS_Reports_Guide.pdf", url: "/sops/TPS_Reports_Guide.pdf", size: 1536, status: SOPFileStatus.COMPLETED }],
     status: CourseRequestStatus.APPROVED,
     requestedBy: "user_sales_1",
     requestedByName: "Alice Smith",
@@ -62,7 +77,7 @@ const getStatusBadgeVariant = (status: CourseRequestStatus) => {
       return "secondary"
     case CourseRequestStatus.APPROVED:
     case CourseRequestStatus.COMPLETED:
-      return "success"
+      return "default"
     case CourseRequestStatus.REJECTED:
       return "destructive"
     case CourseRequestStatus.GENERATION_IN_PROGRESS:
@@ -96,9 +111,19 @@ const columns: ColumnDefinition<CourseRequest>[] = [
     enableSorting: true,
   },
   {
+    accessorKey: "trainingDetails.cohortSize",
+    header: "Cohort Size",
+    cell: ({ row }) => row.trainingDetails?.cohortSize || 'N/A',
+  },
+  {
+    accessorKey: "trainingDetails.currentCefr",
+    header: "CEFR Level",
+    cell: ({ row }) => row.trainingDetails ? `${row.trainingDetails.currentCefr} → ${row.trainingDetails.targetCefr}` : 'N/A',
+  },
+  {
     accessorKey: "sopFiles",
     header: "SOPs",
-    cell: ({ row }) => row.sopFiles.length,
+    cell: ({ row }) => row.sopFiles?.length || 0,
   },
   {
     accessorKey: "requestedByName",
@@ -131,17 +156,44 @@ export default function SalesRequestsPage() {
   const fetchCourseRequests = async () => {
     setIsLoading(true)
     try {
-      // const response = await fetchWithAuth(`${API_BASE_URL}/sales/course-requests`);
-      // if (!response.ok) throw new Error("Failed to fetch course requests");
-      // const data = await response.json();
-      // setCourseRequests(data);
-
-      // Simulate API call with mock data
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      setCourseRequests(mockCourseRequests)
+      const data = await salesService.getCourseRequests();
+      
+      // Map backend data to frontend CourseRequest type
+      const mappedRequests: CourseRequest[] = data.map((request: any) => ({
+        id: request.id.toString(),
+        clientDetails: {
+          companyName: request.company_name,
+          contactPerson: request.contact_person,
+          email: request.contact_email,
+          phone: request.contact_phone,
+          industry: request.industry
+        },
+        sopFiles: request.sop_documents || [],
+        status: mapBackendStatusToFrontend(request.status),
+        requestedBy: request.sales_user_id?.toString() || '',
+        requestedByName: 'Sales User', // We'll need to get this from user data later
+        createdAt: request.created_at,
+        updatedAt: request.updated_at,
+        trainingDetails: {
+          cohortSize: request.cohort_size,
+          currentCefr: request.current_cefr,
+          targetCefr: request.target_cefr,
+          objectives: request.training_objectives,
+          painPoints: request.pain_points,
+          requirements: request.specific_requirements,
+          courseLengthHours: request.course_length_hours,
+          deliveryMethod: request.delivery_method,
+          schedule: request.preferred_schedule
+        },
+        priority: request.priority
+      }));
+      
+      setCourseRequests(mappedRequests);
     } catch (error) {
       console.error("Error fetching course requests:", error)
-      // Handle error (e.g., show toast)
+      // Fallback to mock data for development
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      setCourseRequests(mockCourseRequests)
     } finally {
       setIsLoading(false)
     }

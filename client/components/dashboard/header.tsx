@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/contexts/auth-context"
-import { UserRole } from "@/lib/constants"
+import { UserRole } from "packages/shared/constants"
 import { SidebarNavItem } from "./sidebar-nav-item"
 import { ThemeSwitcher } from "@/components/theme-switcher"
 
@@ -102,7 +102,7 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               {user?.avatarUrl ? (
-                <img src={user.avatarUrl || "/placeholder.svg"} alt={user.name} className="h-8 w-8 rounded-full" />
+                <img src={user.avatarUrl || "/placeholder.svg"} alt={user?.first_name || user?.username || user?.email || "User"} className="h-8 w-8 rounded-full" />
               ) : (
                 <UserCircle className="h-5 w-5" />
               )}
@@ -110,7 +110,7 @@ export function Header() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{user?.name || "My Account"}</DropdownMenuLabel>
+            <DropdownMenuLabel>{user?.first_name || user?.username || user?.email || "My Account"}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {

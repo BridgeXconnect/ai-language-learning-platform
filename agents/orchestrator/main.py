@@ -11,13 +11,15 @@ from datetime import datetime
 import asyncio
 import aiohttp
 from enum import Enum
+from dotenv import load_dotenv
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models import OpenAIModel
-
 from workflow import CourseGenerationWorkflow
 from agent_client import AgentClient
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -67,6 +69,7 @@ class WorkflowResult(BaseModel):
     retry_count: int = 0
 
 class OrchestrationDeps(BaseModel):
+    model_config = {"arbitrary_types_allowed": True}
     workflow: CourseGenerationWorkflow
     agent_client: AgentClient
 
@@ -107,12 +110,9 @@ Error Handling Strategy:
 - Comprehensive error logging and alerting
 """
 
-# Initialize the AI model
-model = OpenAIModel('gpt-4o', api_key=os.getenv('OPENAI_API_KEY'))
-
 # Create the orchestrator agent
 orchestrator_agent = Agent(
-    model,
+    'openai:gpt-4o',
     system_prompt=SYSTEM_PROMPT,
     deps_type=OrchestrationDeps
 )

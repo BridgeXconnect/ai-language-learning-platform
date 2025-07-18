@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
-import { UserRole } from "@/lib/constants"
+import { UserRole } from "packages/shared/constants"
 import { SidebarNavItem } from "./sidebar-nav-item"
 import { useState } from "react"
 import { cn } from "@/lib/utils"

@@ -10,8 +10,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import asyncio
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from app.config import settings
-from app.services.auth_service import AuthService
+from app.core.config import settings
+from app.domains.auth.services import AuthService
 
 def create_simple_user():
     # Connect to database

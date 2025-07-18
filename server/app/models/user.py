@@ -2,7 +2,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from app.database import Base
+from app.core.database import Base
 
 # Association table for user roles
 user_roles = Table(
@@ -28,9 +28,9 @@ class User(Base):
 
     # Relationships
     user_roles_rel = relationship("Role", secondary=user_roles, back_populates="users")
-    course_requests = relationship("CourseRequest", back_populates="sales_user")
-    created_courses = relationship("Course", foreign_keys="Course.created_by", back_populates="creator") 
-    approved_courses = relationship("Course", foreign_keys="Course.approved_by", back_populates="approver")
+    course_requests = relationship("CourseRequest", back_populates="sales_user", lazy="dynamic")
+    created_courses = relationship("Course", foreign_keys="Course.created_by", back_populates="creator", lazy="dynamic") 
+    approved_courses = relationship("Course", foreign_keys="Course.approved_by", back_populates="approver", lazy="dynamic")
 
     @property
     def roles(self):

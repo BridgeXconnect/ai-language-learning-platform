@@ -11,7 +11,7 @@ import os
 # Add the app directory to the path so we can import our models
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app.schemas.sales import CourseRequestCreateRequest, CEFRLevelEnum, DeliveryMethodEnum, PriorityEnum
+from app.domains.sales.schemas import CourseRequestCreateRequest, CEFRLevelEnum, DeliveryMethodEnum, PriorityEnum
 
 # API Configuration
 API_BASE_URL = "http://127.0.0.1:8001"

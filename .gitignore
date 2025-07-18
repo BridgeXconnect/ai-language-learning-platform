@@ -179,3 +179,17 @@ temp/
 *.json.bak
 *_backup.*
 test_uploads/
+
+# Logs directory
+logs/
+
+# Temporary files
+temp/
+
+# Legacy scripts
+scripts/legacy/
+
+# Archived documentation
+docs/archived/
+docs/progress-reports/
+

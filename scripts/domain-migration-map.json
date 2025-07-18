@@ -1,0 +1,45 @@
+{
+  "file_migrations": {
+    "models": {
+      "user.py": "domains/auth/models.py",
+      "server_models_user.py": "domains/auth/models.py",
+      "sales.py": "domains/sales/models.py",
+      "course.py": "domains/courses/models.py",
+      "server_models_course.py": "domains/courses/models.py"
+    },
+    "routes": {
+      "auth_routes.py": "domains/auth/routes.py",
+      "server_routes_auth.py": "domains/auth/routes.py",
+      "sales_routes.py": "domains/sales/routes.py",
+      "server_routes_sales.py": "domains/sales/routes.py",
+      "course_routes.py": "domains/courses/routes.py",
+      "ai_routes.py": "domains/ai/routes.py",
+      "agent_routes.py": "domains/ai/routes.py"
+    },
+    "services": {
+      "auth_service.py": "domains/auth/services.py",
+      "user_service.py": "domains/auth/services.py",
+      "sales_service.py": "domains/sales/services.py",
+      "course_service.py": "domains/courses/services.py",
+      "course_generation_service.py": "domains/courses/services.py",
+      "ai_service.py": "domains/ai/services/core.py",
+      "enhanced_ai_service.py": "domains/ai/services/enhanced.py",
+      "ai_tutor_service.py": "domains/ai/services/tutor.py",
+      "ai_content_service.py": "domains/ai/services/content.py",
+      "ai_assessment_service.py": "domains/ai/services/assessment.py"
+    },
+    "schemas": {
+      "auth.py": "domains/auth/schemas.py",
+      "sales.py": "domains/sales/schemas.py",
+      "course.py": "domains/courses/schemas.py",
+      "ai.py": "domains/ai/schemas.py"
+    }
+  },
+  "core_files": {
+    "config.py": "core/config.py",
+    "database.py": "core/database.py"
+  },
+  "shared_files": {
+    "middleware/auth_middleware.py": "shared/middleware/auth.py"
+  }
+}

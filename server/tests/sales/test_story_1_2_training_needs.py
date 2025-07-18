@@ -12,10 +12,10 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 from app.main import app
-from app.database import get_db
-from app.models.user import User
-from app.models.sales import CourseRequest, CEFRLevel
-from app.services.auth_service import AuthService
+from app.core.database import get_db
+from app.domains.auth.models import User
+from app.domains.sales.models import CourseRequest, CEFRLevel
+from app.domains.auth.services import AuthService
 import json
 
 client = TestClient(app)
@@ -28,7 +28,7 @@ def test_user(db: Session):
         first_name="Test",
         last_name="Sales",
         email="test@sales.com",
-        hashed_password="test_password_hash"
+        password_hash="test_password_hash"
     )
     db.add(user)
     db.commit()
@@ -50,6 +50,14 @@ def sample_course_request_data():
         "contact_person": "John Doe",
         "contact_email": "john@techcorp.com",
         "contact_phone": "+1-555-123-4567",
+        "project_title": "Business English Training Project",
+        "project_description": "Comprehensive business English training program for international communication",
+        "participant_count": 15,
+        "current_english_level": "A2",
+        "target_english_level": "B1",
+        "training_goals": "Improve business English communication skills for international meetings and presentations",
+        "specific_challenges": "Difficulty with technical vocabulary and presentation confidence",
+        # Legacy fields for backwards compatibility
         "cohort_size": 15,
         "current_cefr": "A2",
         "target_cefr": "B1",
@@ -57,8 +65,7 @@ def sample_course_request_data():
         "pain_points": "Difficulty with technical vocabulary and presentation confidence",
         "specific_requirements": "Sales team and customer service representatives",
         "delivery_method": "BLENDED",
-        "preferred_schedule": "8-weeks",
-        "priority": "NORMAL"
+        "preferred_schedule": "8-weeks"
     }
 
 class TestCEFRProgressionValidation:
@@ -167,7 +174,7 @@ class TestTrainingObjectivesValidation:
                              headers=auth_headers)
         
         assert response.status_code == 422
-        assert "cannot exceed 500 characters" in response.json()["detail"][0]["msg"]
+        assert "at most 500 characters" in response.json()["detail"][0]["msg"]
     
     def test_minimum_training_objectives_length(self, auth_headers, sample_course_request_data):
         """Test minimum training objectives length requirement"""
@@ -205,7 +212,7 @@ class TestPainPointsValidation:
                              headers=auth_headers)
         
         assert response.status_code == 422
-        assert "cannot exceed 300 characters" in response.json()["detail"][0]["msg"]
+        assert "at most 300 characters" in response.json()["detail"][0]["msg"]
     
     def test_optional_pain_points(self, auth_headers, sample_course_request_data):
         """Test that pain points are optional"""

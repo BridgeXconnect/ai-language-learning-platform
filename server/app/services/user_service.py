@@ -1,8 +1,8 @@
 from typing import List, Optional, Dict
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.models.user import User, Role, Permission
-from app.services.auth_service import AuthService
+from app.domains.auth.models import User, Role, Permission
+from app.domains.auth.services import AuthService
 
 class UserService:
     @staticmethod

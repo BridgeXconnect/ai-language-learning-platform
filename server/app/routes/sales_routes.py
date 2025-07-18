@@ -5,13 +5,14 @@ from typing import List, Optional
 import os
 import tempfile
 
-from app.database import get_db
+from app.core.database import get_db
 from app.middleware.auth_middleware import require_auth, require_roles
-from app.services.sales_service import SalesService, SOPService, ClientFeedbackService, SalesAnalyticsService
-from app.services.auth_service import AuthService
-from app.schemas.sales import (
+from app.domains.sales.services import SalesService, SOPService, ClientFeedbackService, SalesAnalyticsService
+from app.domains.auth.services import AuthService
+from app.domains.sales.schemas import (
     CourseRequestCreateRequest,
     CourseRequestUpdateRequest,
+    CourseRequestWizardRequest,
     CourseRequestResponse,
     CourseRequestDetailResponse,
     SOPDocumentResponse,
@@ -54,7 +55,7 @@ async def get_course_requests(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/course-requests", response_model=CourseRequestResponse)
+@router.post("/course-requests", response_model=CourseRequestResponse, status_code=201)
 async def create_course_request(
     request: CourseRequestCreateRequest,
     token: HTTPAuthorizationCredentials = Depends(security),
@@ -67,6 +68,73 @@ async def create_course_request(
         course_request = SalesService.create_course_request(
             db=db,
             request_data=request,
+            sales_user_id=current_user.id
+        )
+        
+        return course_request
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/course-requests/wizard", response_model=CourseRequestResponse)
+async def create_course_request_from_wizard(
+    request: CourseRequestWizardRequest,
+    token: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    """Create a new course request from the comprehensive wizard"""
+    try:
+        current_user = AuthService.get_current_user(db, token.credentials)
+        
+        # Convert wizard request to database format
+        course_request_data = {
+            # Client Information
+            "company_name": request.company_name,
+            "industry": request.industry,
+            "company_size": request.company_size,
+            "location": request.location,
+            "website": request.website,
+            
+            # Contact Information
+            "contact_person": request.contact_person,
+            "contact_email": request.contact_email,
+            "contact_phone": request.contact_phone,
+            "decision_maker": request.decision_maker,
+            "decision_maker_role": request.decision_maker_role,
+            
+            # Project Information
+            "project_title": request.project_title,
+            "project_description": request.project_description,
+            "estimated_budget": request.estimated_budget,
+            "timeline": request.timeline,
+            "urgency": request.urgency,
+            "has_existing_training": request.has_existing_training,
+            "existing_training_description": request.existing_training_description,
+            
+            # Training Requirements
+            "participant_count": request.participant_count,
+            "current_english_level": request.current_english_level,
+            "target_english_level": request.target_english_level,
+            "target_roles": request.target_roles,
+            "communication_scenarios": request.communication_scenarios,
+            "training_goals": request.training_goals,
+            "specific_challenges": request.specific_challenges,
+            "success_metrics": request.success_metrics,
+            
+            # Map to legacy fields for backwards compatibility
+            "cohort_size": request.participant_count,
+            "current_cefr": request.current_english_level,
+            "target_cefr": request.target_english_level,
+            "training_objectives": request.training_goals,
+            "pain_points": request.specific_challenges,
+            
+            # Set defaults
+            "priority": "medium",  # Map urgency to priority
+            "status": "submitted",  # Wizard submissions are automatically submitted
+        }
+        
+        course_request = SalesService.create_course_request_from_wizard(
+            db=db,
+            request_data=course_request_data,
             sales_user_id=current_user.id
         )
         
@@ -221,26 +289,47 @@ async def upload_sop_document(
         if not current_user.has_role("admin") and course_request.sales_user_id != current_user.id:
             raise HTTPException(status_code=403, detail="Access denied")
         
-        # Validate file
+        # Enhanced file validation
+        if not file.filename:
+            raise HTTPException(status_code=400, detail="No filename provided")
+            
         if not SOPService.allowed_file(file.filename):
-            raise HTTPException(status_code=400, detail="File type not allowed")
+            allowed_extensions = ', '.join(SOPService.ALLOWED_EXTENSIONS)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"File type not allowed. Supported formats: {allowed_extensions}"
+            )
         
-        if file.size > SOPService.MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="File size too large")
+        if file.size and file.size > SOPService.MAX_FILE_SIZE:
+            max_size_mb = SOPService.MAX_FILE_SIZE // (1024 * 1024)
+            raise HTTPException(
+                status_code=400, 
+                detail=f"File size too large. Maximum allowed: {max_size_mb}MB"
+            )
+        
+        # Check for potentially dangerous file names
+        if '..' in file.filename or '/' in file.filename or '\\' in file.filename:
+            raise HTTPException(status_code=400, detail="Invalid file name")
         
         # Generate unique filename
         unique_filename = SOPService.generate_unique_filename(file.filename)
         
         # Save file temporarily and upload to S3 (simplified for demo)
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            content = await file.read()
-            temp_file.write(content)
-            temp_file_path = temp_file.name
-        
-        # In production, upload to S3 here
-        s3_key = f"sop-documents/{request_id}/{unique_filename}"
-        
+        temp_file_path = None
         try:
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                content = await file.read()
+                
+                # Validate file content isn't empty
+                if len(content) == 0:
+                    raise HTTPException(status_code=400, detail="File is empty")
+                
+                temp_file.write(content)
+                temp_file_path = temp_file.name
+            
+            # In production, upload to S3 here
+            s3_key = f"sop-documents/{request_id}/{unique_filename}"
+            
             # Create SOP document record
             sop_doc = SOPService.create_sop_document(
                 db=db,
@@ -248,7 +337,7 @@ async def upload_sop_document(
                 filename=unique_filename,
                 original_filename=file.filename,
                 s3_key=s3_key,
-                content_type=file.content_type,
+                content_type=file.content_type or "application/octet-stream",
                 file_size=len(content),
                 upload_notes=upload_notes
             )
@@ -260,9 +349,23 @@ async def upload_sop_document(
                 processing_status=sop_doc.processing_status,
                 message="SOP document uploaded successfully"
             )
+            
+        except HTTPException:
+            raise
+        except Exception as e:
+            # Log the error for debugging
+            print(f"Error during SOP upload: {str(e)}")
+            raise HTTPException(
+                status_code=500, 
+                detail="Failed to process uploaded file. Please try again."
+            )
         finally:
             # Clean up temp file
-            os.unlink(temp_file_path)
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                except Exception as e:
+                    print(f"Warning: Failed to clean up temp file {temp_file_path}: {e}")
             
     except HTTPException:
         raise

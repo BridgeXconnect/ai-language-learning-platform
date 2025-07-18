@@ -10,7 +10,7 @@ export default function OverviewPage() {
   return (
     <div className="space-y-6">
       <div className="p-8 rounded-lg bg-gradient-to-br from-primary/80 via-primary to-indigo-700 text-primary-foreground shadow-lg">
-        <h1 className="text-4xl font-bold">Welcome back, {user?.name || "User"}!</h1>
+        <h1 className="text-4xl font-bold">Welcome back, {user?.first_name || user?.username || "User"}!</h1>
         <p className="text-lg mt-2 opacity-90">Here&apos;s what&apos;s happening with your English courses today.</p>
       </div>
 

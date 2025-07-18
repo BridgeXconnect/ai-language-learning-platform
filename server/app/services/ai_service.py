@@ -19,7 +19,7 @@ except ImportError as e:
     Anthropic = None
     tiktoken = None
 
-from app.config import settings
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -33,14 +33,33 @@ class AIService:
         
         # Initialize OpenAI if API key is available
         if settings.OPENAI_API_KEY and openai:
-            openai.api_key = settings.OPENAI_API_KEY
-            self.openai_client = openai
-            if tiktoken:
-                self.tokenizer = tiktoken.get_encoding("cl100k_base")
+            try:
+                self.openai_client = openai.OpenAI(api_key=settings.OPENAI_API_KEY)
+                if tiktoken:
+                    self.tokenizer = tiktoken.get_encoding("cl100k_base")
+            except Exception as e:
+                logger.warning(f"Failed to initialize OpenAI client: {e}")
+                self.openai_client = None
         
         # Initialize Anthropic if API key is available
         if settings.ANTHROPIC_API_KEY and Anthropic:
-            self.anthropic_client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+            try:
+                # Try different initialization approaches
+                self.anthropic_client = Anthropic(
+                    api_key=settings.ANTHROPIC_API_KEY,
+                    timeout=30.0,
+                    max_retries=3
+                )
+            except TypeError as e:
+                if 'proxies' in str(e):
+                    logger.warning(f"Anthropic client initialization failed due to proxy configuration: {e}")
+                    logger.warning("Continuing with OpenAI only...")
+                    self.anthropic_client = None
+                else:
+                    raise
+            except Exception as e:
+                logger.warning(f"Failed to initialize Anthropic client: {e}")
+                self.anthropic_client = None
     
     def is_available(self) -> bool:
         """Check if AI services are available."""
@@ -103,7 +122,7 @@ class AIService:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
         
-        response = await self.openai_client.chat.completions.acreate(
+        response = self.openai_client.chat.completions.create(
             model=model,
             messages=messages,
             max_tokens=max_tokens,
@@ -122,7 +141,7 @@ class AIService:
     ) -> str:
         """Generate content using Anthropic."""
         
-        message = await self.anthropic_client.messages.acreate(
+        message = self.anthropic_client.messages.create(
             model=model,
             max_tokens=max_tokens,
             temperature=temperature,

@@ -219,9 +219,9 @@ export function NewCourseRequestWizard({ isOpen, onOpenChange, onSuccess }: NewC
       case 2: // Upload SOPs
         return (
           <FileUpload
-            onFilesAdded={handleFilesAdded}
-            currentFiles={sopFiles}
-            onFileRemove={handleFileRemove}
+            onFilesSelected={handleFilesAdded}
+            uploadedFiles={sopFiles}
+            onFileRemoved={handleFileRemove}
             maxFiles={10} // Example: allow more files
           />
         )

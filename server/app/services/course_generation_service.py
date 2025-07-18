@@ -12,10 +12,10 @@ import asyncio
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
-from app.database import get_db
-from app.models.course import Course, Module, Lesson, Exercise, Assessment
-from app.models.sales import CourseRequest, SOPDocument
-from app.services.ai_service import ai_service
+from app.core.database import get_db
+from app.domains.courses.models import Course, Module, Lesson, Exercise, Assessment
+from app.domains.sales.models import CourseRequest, SOPDocument
+from app.domains.ai.services.core import ai_service
 from app.services.rag_service import rag_service
 from app.services.document_service import document_processor
 

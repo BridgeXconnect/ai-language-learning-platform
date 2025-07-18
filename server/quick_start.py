@@ -29,20 +29,20 @@ def test_imports():
     print("Testing imports...")
     
     try:
-        from app.database import engine, Base
+        from app.core.database import engine, Base
         print("✅ Database imports OK")
         
-        from app.models.user import User, Role, Permission
+        from app.domains.auth.models import User, Role, Permission
         print("✅ User models OK")
         
-        from app.models.sales import CourseRequest, SOPDocument, ClientFeedback
+        from app.domains.sales.models import CourseRequest, SOPDocument, ClientFeedback
         print("✅ Sales models OK")
         
-        from app.models.course import Course, Module, Lesson
+        from app.domains.courses.models import Course, Module, Lesson
         print("✅ Course models OK")
         
-        from app.services.auth_service import AuthService
-        from app.services.user_service import UserService
+        from app.domains.auth.services import AuthService
+        from app.domains.auth.services import UserService
         print("✅ Services OK")
         
         return True
@@ -56,7 +56,7 @@ def create_tables():
     print("Creating database tables...")
     
     try:
-        from app.database import engine, Base
+        from app.core.database import engine, Base
         Base.metadata.create_all(bind=engine)
         print("✅ Tables created successfully")
         return True

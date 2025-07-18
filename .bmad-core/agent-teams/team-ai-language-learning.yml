@@ -1,0 +1,23 @@
+bundle:
+  name: Team AI Language Learning
+  icon: 🤖
+  description: Specialized team for AI language learning platform development, focusing on AI features, learning analytics, and educational technology.
+agents:
+  - bmad-orchestrator
+  - analyst
+  - pm
+  - po
+  - architect
+  - dev
+  - ui-ux-specialist
+  - performance-accessibility-specialist
+  - testing-quality-specialist
+  - assessment-learning-specialist
+  - portal-developer
+workflows:
+  - brownfield-fullstack
+  - brownfield-service
+  - brownfield-ui
+  - greenfield-fullstack
+  - greenfield-service
+  - greenfield-ui

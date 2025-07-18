@@ -1,8 +1,8 @@
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from app.models.course import Course, Module, Lesson, CourseReview, Exercise, Assessment
-from app.models.user import User
+from app.domains.courses.models import Course, Module, Lesson, CourseReview, Exercise, Assessment
+from app.domains.auth.models import User
 from datetime import datetime
 
 class CourseService:

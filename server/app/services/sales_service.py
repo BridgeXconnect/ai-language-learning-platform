@@ -6,15 +6,17 @@ import os
 import uuid
 from werkzeug.utils import secure_filename
 
-from app.models.sales import CourseRequest, SOPDocument, ClientFeedback, RequestStatus, Priority
-from app.models.user import User
-from app.models.course import Course
-from app.schemas.sales import (
+from app.domains.sales.models import CourseRequest, SOPDocument, ClientFeedback, RequestStatus, Priority
+from app.domains.auth.models import User
+from app.domains.courses.models import Course
+from app.domains.sales.schemas import (
     CourseRequestCreateRequest, 
     CourseRequestUpdateRequest,
     ClientFeedbackCreateRequest,
     SalesDashboardStats
 )
+import aiohttp
+import asyncio
 
 class SalesService:
     
@@ -25,9 +27,54 @@ class SalesService:
         sales_user_id: int
     ) -> CourseRequest:
         """Create a new course request"""
+        try:
+            data = request_data.model_dump()
+            # Convert Enum values to .name for SQLAlchemy Enum fields
+            for key in ["delivery_method", "priority", "current_cefr", "target_cefr"]:
+                if key in data and hasattr(data[key], "name"):
+                    data[key] = data[key].name
+            
+            # Map fields for database compatibility
+            if "current_cefr" in data:
+                data["current_english_level"] = data["current_cefr"]
+            if "target_cefr" in data:
+                data["target_english_level"] = data["target_cefr"]
+            if "training_objectives" in data:
+                data["training_goals"] = data["training_objectives"]
+            if "cohort_size" in data:
+                data["participant_count"] = data["cohort_size"]
+            if "pain_points" in data:
+                data["specific_challenges"] = data["pain_points"]
+            
+            # Set required fields with defaults if not provided
+            if "project_title" not in data or not data["project_title"]:
+                data["project_title"] = f"Training Request for {data.get('company_name', 'Unknown Company')}"
+            if "project_description" not in data or not data["project_description"]:
+                data["project_description"] = data.get("training_objectives", "Language training program")
+            
+            db_request = CourseRequest(
+                sales_user_id=sales_user_id,
+                **data
+            )
+            db.add(db_request)
+            db.commit()
+            db.refresh(db_request)
+            return db_request
+        except Exception as e:
+            print('ERROR in create_course_request:', str(e))
+            raise
+    
+    @staticmethod
+    def create_course_request_from_wizard(
+        db: Session,
+        request_data: Dict[str, Any],
+        sales_user_id: int
+    ) -> CourseRequest:
+        """Create a new course request from comprehensive wizard data"""
+        # Create course request with wizard data
         db_request = CourseRequest(
             sales_user_id=sales_user_id,
-            **request_data.dict()
+            **request_data
         )
         
         db.add(db_request)
@@ -98,7 +145,49 @@ class SalesService:
         db_request.updated_at = datetime.utcnow()
         
         db.commit()
+        
+        # Trigger agent orchestration asynchronously
+        try:
+            loop = asyncio.get_event_loop()
+            loop.create_task(SalesService._trigger_agent_orchestration(db_request))
+        except RuntimeError:
+            # No event loop, create a new one (for testing)
+            asyncio.run(SalesService._trigger_agent_orchestration(db_request))
+        
         return True
+    
+    @staticmethod
+    async def _trigger_agent_orchestration(course_request: CourseRequest):
+        """Trigger the agent orchestration workflow for a submitted course request"""
+        try:
+            orchestrator_url = "http://localhost:8100/orchestrate-course"
+            
+            # Prepare the course request data for the orchestrator
+            orchestration_data = {
+                "course_request_id": course_request.id,
+                "company_name": course_request.company_name,
+                "industry": course_request.industry or "General",
+                "training_goals": course_request.training_goals,
+                "current_english_level": course_request.current_english_level,
+                "duration_weeks": 8,  # Default duration
+                "target_audience": f"{course_request.participant_count} participants",
+                "specific_needs": course_request.specific_challenges or course_request.specific_requirements
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(orchestrator_url, json=orchestration_data) as response:
+                    if response.status == 200:
+                        result = await response.json()
+                        print(f"✅ Agent orchestration triggered for request #{course_request.id}")
+                        print(f"Workflow result: {result.get('success', False)}")
+                        return True
+                    else:
+                        print(f"❌ Failed to trigger agent orchestration: {response.status}")
+                        return False
+                        
+        except Exception as e:
+            print(f"❌ Error triggering agent orchestration: {e}")
+            return False
     
     @staticmethod
     def delete_course_request(db: Session, request_id: int) -> bool:

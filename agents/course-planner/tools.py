@@ -48,6 +48,10 @@ class DatabaseConnection:
 # Global database connection
 db_connection = DatabaseConnection()
 
+# Global tool instances
+rag_context_retriever = RAGContextRetriever()
+performance_metrics = PerformanceMetrics()
+
 class SOPDocumentAnalyzer:
     """Analyzes SOP documents to extract key business processes and vocabulary."""
     
@@ -544,3 +548,432 @@ class DatabaseQueryTool:
         except Exception as e:
             logger.error(f"Curriculum save failed: {e}")
             return {"error": str(e)}
+
+class RAGContextRetriever:
+    """Enhanced tool for retrieving contextual information using RAG service."""
+    
+    def __init__(self):
+        # Import RAG service from server
+        try:
+            import sys
+            import os
+            sys.path.append(os.path.join(os.path.dirname(__file__), '../../server'))
+            from app.services.rag_service import rag_service
+            self.rag_service = rag_service
+        except ImportError as e:
+            logger.warning(f"RAG service not available: {e}")
+            self.rag_service = None
+    
+    async def get_contextual_insights(self, processes: List[str], vocabulary_themes: List[str], course_request_id: int) -> Dict[str, Any]:
+        """Retrieve contextual insights for business processes and vocabulary."""
+        
+        if not self.rag_service or not self.rag_service.is_available():
+            return {"status": "rag_not_available", "insights": []}
+        
+        try:
+            insights = {}
+            
+            # Get context for each process
+            for process in processes[:5]:  # Limit to top 5 processes
+                process_context = await self.rag_service.get_contextual_content(
+                    topic=process,
+                    content_type="procedures",
+                    max_chunks=3
+                )
+                if process_context:
+                    insights[f"process_{process}"] = process_context
+            
+            # Get context for vocabulary themes
+            for theme in vocabulary_themes[:5]:  # Limit to top 5 themes
+                vocab_context = await self.rag_service.get_contextual_content(
+                    topic=theme,
+                    content_type="vocabulary",
+                    max_chunks=2
+                )
+                if vocab_context:
+                    insights[f"vocabulary_{theme}"] = vocab_context
+            
+            # Analyze coverage of identified topics
+            all_topics = processes + vocabulary_themes
+            coverage_analysis = await self.rag_service.analyze_document_coverage(all_topics)
+            
+            return {
+                "status": "success",
+                "contextual_insights": insights,
+                "coverage_analysis": coverage_analysis,
+                "retrieved_at": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"RAG context retrieval failed: {e}")
+            return {"status": "error", "error": str(e)}
+    
+    async def get_company_context(self, company_name: str, industry: str, course_request_id: int) -> Dict[str, Any]:
+        """Retrieve company and industry-specific context."""
+        
+        if not self.rag_service or not self.rag_service.is_available():
+            return {"status": "rag_not_available", "context": {}}
+        
+        try:
+            # Search for company-specific information
+            company_context = await self.rag_service.search_relevant_content(
+                query=f"{company_name} company procedures processes",
+                max_results=5
+            )
+            
+            # Search for industry-specific information
+            industry_context = await self.rag_service.search_relevant_content(
+                query=f"{industry} industry communication requirements",
+                max_results=5
+            )
+            
+            return {
+                "status": "success",
+                "company_context": company_context,
+                "industry_context": industry_context,
+                "context_summary": {
+                    "company_documents_found": len(company_context),
+                    "industry_documents_found": len(industry_context),
+                    "total_context_chunks": len(company_context) + len(industry_context)
+                },
+                "retrieved_at": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Company context retrieval failed: {e}")
+            return {"status": "error", "error": str(e)}
+    
+    async def assess_curriculum_relevance(self, curriculum: Dict[str, Any], course_request_id: int) -> float:
+        """Assess how relevant the curriculum is to available company documents."""
+        
+        if not self.rag_service or not self.rag_service.is_available():
+            return 0.5  # Default moderate relevance
+        
+        try:
+            # Extract key topics from curriculum
+            topics = []
+            topics.extend(curriculum.get('vocabulary_themes', []))
+            topics.extend([module.get('title', '') for module in curriculum.get('modules', [])])
+            topics = [topic for topic in topics if topic]  # Remove empty strings
+            
+            if not topics:
+                return 0.0
+            
+            # Analyze coverage
+            coverage_analysis = await self.rag_service.analyze_document_coverage(topics)
+            
+            # Calculate relevance score
+            overall_score = coverage_analysis.get('overall_score', 0.0)
+            
+            # Adjust based on coverage quality
+            coverage_data = coverage_analysis.get('coverage', {})
+            excellent_count = sum(1 for topic_data in coverage_data.values() 
+                                if topic_data.get('coverage_level') == 'excellent')
+            good_count = sum(1 for topic_data in coverage_data.values() 
+                           if topic_data.get('coverage_level') == 'good')
+            
+            # Boost score for high-quality coverage
+            quality_boost = (excellent_count * 0.2 + good_count * 0.1) / len(topics)
+            
+            final_score = min(overall_score + quality_boost, 1.0)
+            
+            return final_score
+            
+        except Exception as e:
+            logger.error(f"Curriculum relevance assessment failed: {e}")
+            return 0.5
+    
+    async def get_topic_insights(self, topic: str, course_request_id: int) -> Dict[str, Any]:
+        """Get detailed insights for a specific topic."""
+        
+        if not self.rag_service or not self.rag_service.is_available():
+            return {"status": "rag_not_available"}
+        
+        try:
+            # Get contextual content for different aspects
+            insights = {}
+            
+            content_types = ["vocabulary", "procedures", "guidelines", "examples"]
+            
+            for content_type in content_types:
+                context = await self.rag_service.get_contextual_content(
+                    topic=topic,
+                    content_type=content_type,
+                    max_chunks=2
+                )
+                if context:
+                    insights[content_type] = context
+            
+            return {
+                "status": "success",
+                "topic": topic,
+                "insights": insights,
+                "retrieved_at": datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            logger.error(f"Topic insights retrieval failed: {e}")
+            return {"status": "error", "error": str(e)}
+
+class PerformanceMetrics:
+    """Tool for tracking and analyzing agent performance metrics."""
+    
+    def __init__(self):
+        self.metrics_data = {
+            "analysis_metrics": [],
+            "curriculum_saves": [],
+            "planning_failures": [],
+            "quality_scores": [],
+            "optimization_events": []
+        }
+    
+    async def record_analysis_metrics(self, course_request_id: int, processing_time: float, 
+                                    documents_analyzed: int, success: bool, error: str = None) -> None:
+        """Record SOP analysis performance metrics."""
+        
+        metric_entry = {
+            "course_request_id": course_request_id,
+            "processing_time": processing_time,
+            "documents_analyzed": documents_analyzed,
+            "success": success,
+            "error": error,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        self.metrics_data["analysis_metrics"].append(metric_entry)
+        
+        # Keep only last 100 entries
+        if len(self.metrics_data["analysis_metrics"]) > 100:
+            self.metrics_data["analysis_metrics"] = self.metrics_data["analysis_metrics"][-100:]
+    
+    async def record_curriculum_save(self, course_request_id: int, success: bool, 
+                                   quality_score: float = None, error: str = None) -> None:
+        """Record curriculum save metrics."""
+        
+        save_entry = {
+            "course_request_id": course_request_id,
+            "success": success,
+            "quality_score": quality_score,
+            "error": error,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        self.metrics_data["curriculum_saves"].append(save_entry)
+        
+        if quality_score is not None:
+            self.metrics_data["quality_scores"].append(quality_score)
+    
+    async def record_planning_failure(self, course_request_id: int, error: str, processing_time: float) -> None:
+        """Record planning failure for analysis."""
+        
+        failure_entry = {
+            "course_request_id": course_request_id,
+            "error": error,
+            "processing_time": processing_time,
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        
+        self.metrics_data["planning_failures"].append(failure_entry)
+    
+    async def calculate_curriculum_quality_score(self, curriculum: Dict[str, Any]) -> float:
+        """Calculate a quality score for the curriculum."""
+        
+        try:
+            score = 0.0
+            max_score = 100.0
+            
+            # Check basic structure (20 points)
+            if curriculum.get('title'):
+                score += 5
+            if curriculum.get('description'):
+                score += 5
+            if curriculum.get('learning_objectives'):
+                score += 10
+            
+            # Check modules (30 points)
+            modules = curriculum.get('modules', [])
+            if modules:
+                score += 10  # Has modules
+                if len(modules) >= 4:
+                    score += 10  # Adequate number
+                if all(module.get('learning_objectives') for module in modules):
+                    score += 10  # All modules have objectives
+            
+            # Check vocabulary integration (20 points)
+            if curriculum.get('vocabulary_themes'):
+                score += 10
+                if len(curriculum.get('vocabulary_themes', [])) >= 5:
+                    score += 10
+            
+            # Check grammar progression (15 points)
+            if curriculum.get('grammar_progression'):
+                score += 15
+            
+            # Check assessment strategy (15 points)
+            if curriculum.get('assessment_strategy'):
+                score += 15
+            
+            return min(score, max_score)
+            
+        except Exception as e:
+            logger.error(f"Quality score calculation failed: {e}")
+            return 50.0  # Default moderate score
+    
+    async def calculate_completeness_score(self, curriculum: Dict[str, Any]) -> float:
+        """Calculate curriculum completeness score."""
+        
+        try:
+            required_fields = [
+                'title', 'description', 'cefr_level', 'duration_weeks',
+                'learning_objectives', 'modules', 'vocabulary_themes',
+                'grammar_progression', 'assessment_strategy'
+            ]
+            
+            present_fields = sum(1 for field in required_fields if curriculum.get(field))
+            completeness = (present_fields / len(required_fields)) * 100
+            
+            # Bonus for module completeness
+            modules = curriculum.get('modules', [])
+            if modules:
+                module_completeness = sum(
+                    1 for module in modules 
+                    if all(module.get(field) for field in ['title', 'description', 'learning_objectives'])
+                ) / len(modules) * 10
+                completeness += module_completeness
+            
+            return min(completeness, 100.0)
+            
+        except Exception as e:
+            logger.error(f"Completeness score calculation failed: {e}")
+            return 60.0
+    
+    async def optimize_curriculum(self, curriculum: Dict[str, Any], optimization_criteria: List[str]) -> Dict[str, Any]:
+        """Optimize curriculum based on criteria and performance data."""
+        
+        optimized_curriculum = curriculum.copy()
+        optimization_log = []
+        
+        try:
+            for criterion in optimization_criteria:
+                if criterion == "vocabulary_balance":
+                    # Ensure balanced vocabulary distribution
+                    modules = optimized_curriculum.get('modules', [])
+                    vocab_themes = optimized_curriculum.get('vocabulary_themes', [])
+                    
+                    if modules and vocab_themes:
+                        themes_per_module = len(vocab_themes) // len(modules)
+                        for i, module in enumerate(modules):
+                            start_idx = i * themes_per_module
+                            end_idx = start_idx + themes_per_module
+                            module['vocabulary_themes'] = vocab_themes[start_idx:end_idx]
+                        
+                        optimization_log.append("Balanced vocabulary distribution across modules")
+                
+                elif criterion == "progression_smoothing":
+                    # Ensure smooth progression in difficulty
+                    modules = optimized_curriculum.get('modules', [])
+                    if len(modules) > 1:
+                        for i, module in enumerate(modules):
+                            module['difficulty_level'] = (i + 1) / len(modules)
+                            module['prerequisite_completion'] = i > 0
+                        
+                        optimization_log.append("Applied smooth difficulty progression")
+                
+                elif criterion == "assessment_integration":
+                    # Integrate assessments throughout curriculum
+                    modules = optimized_curriculum.get('modules', [])
+                    for i, module in enumerate(modules):
+                        if i % 2 == 1:  # Every other module
+                            module['formative_assessment'] = True
+                        if i == len(modules) - 1:  # Last module
+                            module['summative_assessment'] = True
+                    
+                    optimization_log.append("Integrated assessment points")
+            
+            # Record optimization event
+            optimization_entry = {
+                "criteria": optimization_criteria,
+                "changes_made": optimization_log,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            self.metrics_data["optimization_events"].append(optimization_entry)
+            
+            return {
+                "optimized_curriculum": optimized_curriculum,
+                "optimization_log": optimization_log,
+                "optimization_score": await self.calculate_curriculum_quality_score(optimized_curriculum)
+            }
+            
+        except Exception as e:
+            logger.error(f"Curriculum optimization failed: {e}")
+            return {
+                "optimized_curriculum": curriculum,
+                "optimization_log": ["Optimization failed"],
+                "error": str(e)
+            }
+    
+    async def get_improvement_recommendations(self, curriculum: Dict[str, Any]) -> List[str]:
+        """Generate improvement recommendations based on curriculum analysis."""
+        
+        recommendations = []
+        
+        try:
+            # Check for missing elements
+            if not curriculum.get('learning_objectives'):
+                recommendations.append("Add specific, measurable learning objectives")
+            
+            if not curriculum.get('assessment_strategy'):
+                recommendations.append("Develop comprehensive assessment strategy")
+            
+            modules = curriculum.get('modules', [])
+            if len(modules) < 4:
+                recommendations.append("Increase number of modules for better content distribution")
+            
+            # Check module quality
+            incomplete_modules = [i for i, module in enumerate(modules) 
+                                if not module.get('learning_objectives')]
+            if incomplete_modules:
+                recommendations.append(f"Add learning objectives to modules: {incomplete_modules}")
+            
+            # Check vocabulary coverage
+            vocab_themes = curriculum.get('vocabulary_themes', [])
+            if len(vocab_themes) < 5:
+                recommendations.append("Expand vocabulary themes for comprehensive coverage")
+            
+            # Check CEFR alignment
+            if not curriculum.get('cefr_level'):
+                recommendations.append("Specify clear CEFR level alignment")
+            
+            return recommendations
+            
+        except Exception as e:
+            logger.error(f"Recommendation generation failed: {e}")
+            return ["Unable to generate recommendations - review curriculum manually"]
+    
+    def get_performance_summary(self) -> Dict[str, Any]:
+        """Get summary of agent performance metrics."""
+        
+        try:
+            analysis_metrics = self.metrics_data["analysis_metrics"]
+            curriculum_saves = self.metrics_data["curriculum_saves"]
+            quality_scores = self.metrics_data["quality_scores"]
+            
+            summary = {
+                "total_analyses": len(analysis_metrics),
+                "successful_analyses": sum(1 for m in analysis_metrics if m["success"]),
+                "total_saves": len(curriculum_saves),
+                "successful_saves": sum(1 for s in curriculum_saves if s["success"]),
+                "average_quality_score": sum(quality_scores) / len(quality_scores) if quality_scores else 0,
+                "total_failures": len(self.metrics_data["planning_failures"]),
+                "optimization_events": len(self.metrics_data["optimization_events"])
+            }
+            
+            if analysis_metrics:
+                processing_times = [m["processing_time"] for m in analysis_metrics]
+                summary["average_processing_time"] = sum(processing_times) / len(processing_times)
+            
+            return summary
+            
+        except Exception as e:
+            logger.error(f"Performance summary generation failed: {e}")
+            return {"error": "Unable to generate performance summary"}

@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
-from app.database import SessionLocal, engine
-from app.models.user import User, Role, Permission, user_roles, role_permissions
-from app.models.course import Course, Module, Lesson
-from app.models.sales import CourseRequest, SOPDocument, ClientFeedback, RequestStatus, Priority, CEFRLevel, DeliveryMethod
-from app.services.auth_service import AuthService
-from app.services.user_service import UserService
+from app.core.database import SessionLocal, engine
+from app.domains.auth.models import User, Role, Permission, user_roles, role_permissions
+from app.domains.courses.models import Course, Module, Lesson
+from app.domains.sales.models import CourseRequest, SOPDocument, ClientFeedback, RequestStatus, Priority, CEFRLevel, DeliveryMethod
+from app.domains.auth.services import AuthService
+from app.domains.auth.services import UserService
 
 def create_initial_permissions(db: Session):
     """Create initial permissions"""
@@ -316,7 +316,7 @@ def init_database():
     print("Initializing database...")
     
     # Create all tables
-    from app.database import Base
+    from app.core.database import Base
     Base.metadata.create_all(bind=engine)
     
     db = SessionLocal()

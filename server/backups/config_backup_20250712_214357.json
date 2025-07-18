@@ -1,0 +1,9 @@
+{
+  "timestamp": "20250712_214357",
+  "env_vars": {
+    "DATABASE_URL": "postgresql://postgres.qpxvicjunijsydgigmmd:a9kDtuQBiwVnaQE9@aws-0-ap-southeast-1.pooler.supabase.com:5432/postgres",
+    "JWT_SECRET_KEY": "your_jwt_secret_key_here_make_it_long_and_random",
+    "JWT_ALGORITHM": "HS256"
+  },
+  "database_url": "***p***o***s***t***g***r***e***s***q***l***:***/***/***p***o***s***t***g***r***e***s***.***q***p***x***v***i***c***j***u***n***i***j***s***y***d***g***i***g***m***m***d***:***a***9***k***D***t***u***Q***B***i***w***V***n***a***Q***E***9***@***a***w***s***-***0***-***a***p***-***s***o***u***t***h***e***a***s***t***-***1***.***p***o***o***l***e***r***.***s***u***p***a***b***a***s***e***.***c***o***m***:***5***4***3***2***/***p***o***s***t***g***r***e***s***"
+}

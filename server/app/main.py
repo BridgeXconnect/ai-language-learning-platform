@@ -1,14 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from app.config import settings
-from app.database import engine, Base
-from app.routes import auth_routes, course_routes, sales_routes, ai_routes, agent_routes
+from app.core.config import settings
+from app.core.database import engine, Base
+from app.routes import auth_routes, course_routes, sales_routes, ai_routes, agent_routes, sop_routes, health_routes
 
 # Import all models to ensure they're registered with SQLAlchemy
 from app.models import user, sales
-from app.models.user import User, Role, Permission
-from app.models.sales import CourseRequest
+from app.domains.auth.models import User, Role, Permission
+from app.domains.sales.models import CourseRequest
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -40,21 +40,15 @@ async def startup_event():
     print("🚀 Server starting up - health check available at /health")
 
 # Include routers
+app.include_router(health_routes.router)  # Add health check first
 app.include_router(auth_routes.router)
 app.include_router(course_routes.router)
 app.include_router(sales_routes.router)
 app.include_router(ai_routes.router)
 app.include_router(agent_routes.router)
+app.include_router(sop_routes.router)
 
-# Health check endpoint with CORS headers
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "version": settings.APP_VERSION,
-        "cors_origins": settings.cors_origins_list,
-        "timestamp": "2025-06-26T00:00:00Z"
-    }
+# Remove duplicate health check (using dedicated health_routes module)
 
 # Add OPTIONS handler for all routes to fix CORS
 @app.options("/{rest_of_path:path}")

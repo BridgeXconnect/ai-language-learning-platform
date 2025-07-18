@@ -282,7 +282,7 @@ export function V0PreviewPanel({
               <div className="text-xs space-y-1 text-muted-foreground">
                 <div>ID: {generation.id}</div>
                 <div>Status: {generation.status}</div>
-                <div>Created: {new Date(generation.created_at).toLocaleTimeString()}</div>
+                <div>Created: {new Date(generation.created).toLocaleTimeString()}</div>
               </div>
             </div>
           )}
@@ -346,9 +346,9 @@ export function V0PreviewPanel({
                     <CardTitle className="text-sm">Generated Code</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {generation?.component_code ? (
+                    {generation?.choices[0]?.message?.content ? (
                       <pre className="text-xs bg-muted p-4 rounded overflow-auto max-h-[400px]">
-                        <code>{generation.component_code}</code>
+                        <code>{generation.choices[0].message.content}</code>
                       </pre>
                     ) : (
                       <div className="flex items-center justify-center h-[200px] text-muted-foreground">

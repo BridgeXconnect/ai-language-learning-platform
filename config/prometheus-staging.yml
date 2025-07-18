@@ -1,0 +1,254 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert_rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # AI Language Learning Platform Services
+  - job_name: 'backend'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  - job_name: 'frontend'
+    static_configs:
+      - targets: ['frontend:3000']
+    metrics_path: '/api/metrics'
+    scrape_interval: 15s
+
+  # Multi-Agent System
+  - job_name: 'orchestrator'
+    static_configs:
+      - targets: ['orchestrator:8100']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  - job_name: 'course-planner'
+    static_configs:
+      - targets: ['course-planner:8101']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  - job_name: 'content-creator'
+    static_configs:
+      - targets: ['content-creator:8102']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  - job_name: 'quality-assurance'
+    static_configs:
+      - targets: ['quality-assurance:8103']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Infrastructure Services
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    scrape_interval: 30s
+
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    scrape_interval: 30s
+
+  - job_name: 'milvus'
+    static_configs:
+      - targets: ['vector-db:9091']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  # System Metrics
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    scrape_interval: 30s
+
+  # Load Balancer
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx:9113']
+    scrape_interval: 30s
+
+  # Custom Business Metrics
+  - job_name: 'course-generation-metrics'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/api/metrics/course-generation'
+    scrape_interval: 60s
+
+  - job_name: 'user-activity-metrics'
+    static_configs:
+      - targets: ['backend:8000']
+    metrics_path: '/api/metrics/user-activity'
+    scrape_interval: 60s
+
+  - job_name: 'agent-performance-metrics'
+    static_configs:
+      - targets: ['orchestrator:8100']
+    metrics_path: '/api/metrics/agent-performance'
+    scrape_interval: 30s
+
+# Recording rules for derived metrics
+recording_rules:
+  - name: ai_language_platform_rules
+    rules:
+      # Agent Health Score (0-1)
+      - record: agent_health_score
+        expr: |
+          (
+            up{job=~"orchestrator|course-planner|content-creator|quality-assurance"} * 0.4 +
+            (1 - rate(http_requests_total{job=~"orchestrator|course-planner|content-creator|quality-assurance", status=~"5.."}[5m])) * 0.3 +
+            (histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=~"orchestrator|course-planner|content-creator|quality-assurance"}[5m])) < 2) * 0.3
+          )
+
+      # Course Generation Success Rate
+      - record: course_generation_success_rate
+        expr: |
+          rate(course_generation_completed_total[5m]) / 
+          rate(course_generation_started_total[5m])
+
+      # System Resource Utilization
+      - record: system_resource_utilization
+        expr: |
+          (
+            (1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) * 0.4 +
+            (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 0.4 +
+            rate(node_disk_io_time_seconds_total[5m]) * 0.2
+          )
+
+      # API Response Time P95
+      - record: api_response_time_p95
+        expr: |
+          histogram_quantile(0.95, 
+            rate(http_request_duration_seconds_bucket{job=~"backend|frontend"}[5m])
+          )
+
+      # Agent Coordination Efficiency
+      - record: agent_coordination_efficiency
+        expr: |
+          rate(agent_handoff_successful_total[5m]) / 
+          rate(agent_handoff_total[5m])
+
+# Alert Rules
+alert_rules:
+  - name: ai_language_platform_alerts
+    rules:
+      # Critical Alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Service {{ $labels.job }} has been down for more than 1 minute"
+
+      - alert: AgentHealthCritical
+        expr: agent_health_score < 0.5
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Agent {{ $labels.job }} health is critical"
+          description: "Agent {{ $labels.job }} health score is {{ $value }}, below critical threshold of 0.5"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate on {{ $labels.job }}"
+          description: "Error rate is {{ $value }} req/sec, above threshold of 0.1 req/sec"
+
+      # Warning Alerts
+      - alert: HighResponseTime
+        expr: api_response_time_p95 > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time on {{ $labels.job }}"
+          description: "95th percentile response time is {{ $value }}s, above threshold of 2s"
+
+      - alert: LowCourseGenerationSuccessRate
+        expr: course_generation_success_rate < 0.9
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low course generation success rate"
+          description: "Course generation success rate is {{ $value }}, below threshold of 90%"
+
+      - alert: HighResourceUtilization
+        expr: system_resource_utilization > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High system resource utilization"
+          description: "System resource utilization is {{ $value }}, above threshold of 80%"
+
+      - alert: DatabaseConnectionsHigh
+        expr: postgres_stat_database_numbackends > 80
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database connections"
+          description: "Database has {{ $value }} active connections, approaching limit"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis memory usage is {{ $value }}%, above threshold of 80%"
+
+      # Info Alerts
+      - alert: AgentPerformanceDegraded
+        expr: agent_coordination_efficiency < 0.95
+        for: 10m
+        labels:
+          severity: info
+        annotations:
+          summary: "Agent coordination efficiency degraded"
+          description: "Agent coordination efficiency is {{ $value }}, below optimal threshold of 95%"
+
+      - alert: UnusualTrafficPattern
+        expr: |
+          (
+            rate(http_requests_total[5m]) > 
+            avg_over_time(rate(http_requests_total[5m])[1h:5m]) * 2
+          ) or (
+            rate(http_requests_total[5m]) < 
+            avg_over_time(rate(http_requests_total[5m])[1h:5m]) * 0.5
+          )
+        for: 5m
+        labels:
+          severity: info
+        annotations:
+          summary: "Unusual traffic pattern detected"
+          description: "Current traffic rate {{ $value }} is significantly different from historical average"

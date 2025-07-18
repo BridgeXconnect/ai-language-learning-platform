@@ -3,10 +3,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_403_FORBIDDEN
-from app.database import get_db
-from app.services.course_service import CourseService, ModuleService, LessonService
-from app.services.auth_service import AuthService
-from app.schemas.course import (
+from app.core.database import get_db
+from app.domains.courses.services import CourseService, ModuleService, LessonService
+from app.domains.auth.services import AuthService
+from app.domains.courses.schemas import (
     CourseCreateRequest,
     CourseUpdateRequest,
     CourseResponse,
@@ -33,7 +33,7 @@ async def get_courses(
     
     # Filter by user role
     created_by = None
-    if user.user_roles_rel and not any(role.name in ['admin', 'course_manager'] for role in user.user_roles_rel):
+    if user.roles and not any(role.name in ['admin', 'course_manager'] for role in user.roles):
         created_by = user.id
     
     courses = CourseService.get_courses(

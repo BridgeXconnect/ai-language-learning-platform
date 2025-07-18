@@ -12,8 +12,8 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import and_, or_
 
 from app import db
-from app.models.user import User
-from app.models.course import CourseRequest, SOPDocument, CEFRLevel, CourseRequestStatus
+from app.domains.auth.models import User
+from app.domains.courses.models import CourseRequest, SOPDocument, CEFRLevel, CourseRequestStatus
 from app.services.file_service import save_uploaded_file, allowed_file
 from app.services.notification_service import notify_course_manager_new_request
 

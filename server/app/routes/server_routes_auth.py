@@ -14,7 +14,7 @@ import secrets
 import uuid
 
 from app import db
-from app.models.user import User, PasswordResetToken
+from app.domains.auth.models import User, PasswordResetToken
 from app.services.email_service import send_password_reset_email
 
 auth_bp = Blueprint('auth', __name__)

@@ -2,10 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from starlette.status import HTTP_401_UNAUTHORIZED
-from app.database import get_db
-from app.services.auth_service import AuthService
-from app.services.user_service import UserService
-from app.schemas.auth import (
+from app.core.database import get_db
+from app.domains.auth.services import AuthService
+from app.domains.auth.services import UserService
+from app.domains.auth.schemas import (
     LoginRequest,
     RegisterRequest,
     TokenResponse,
@@ -17,7 +17,7 @@ from app.schemas.auth import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer()
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register")
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     try:
         user = UserService.create_user(
@@ -29,7 +29,16 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
             last_name=request.last_name,
             roles=request.roles
         )
-        return UserResponse.from_orm(user)
+        # Manually construct response to avoid schema validation issues
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "status": user.status,
+            "roles": [role.name for role in user.roles] if user.roles else []
+        }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
@@ -76,6 +85,29 @@ async def request_password_reset(
     
     # TODO: Implement email service to send reset link
     return {"message": "If the email exists, a reset link has been sent"}
+
+@router.get("/profile")
+async def get_profile(
+    token: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    try:
+        user = AuthService.get_current_user(db, token.credentials)
+        # Manually construct response to avoid schema validation issues
+        return {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "status": user.status,
+            "roles": [role.name for role in user.roles] if user.roles else []
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=HTTP_401_UNAUTHORIZED,
+            detail=str(e)
+        )
 
 @router.post("/update-password")
 async def update_password(

@@ -6,7 +6,7 @@ import { Header } from "@/components/dashboard/header"
 import { useAuth } from "@/contexts/auth-context"
 import { useRouter, usePathname } from "next/navigation"
 import { useEffect } from "react"
-import { UserRole } from "@/lib/constants"
+import { UserRole } from "@/lib/config"
 
 // Define allowed routes for each role
 const roleRoutes: Record<UserRole, string[]> = {
@@ -44,10 +44,11 @@ export default function DashboardLayout({
         isAuthorized = true
       } else {
         for (const role of user.roles) {
-          if (roleRoutes[role]?.some((allowedPath) => pathname.startsWith(allowedPath) && allowedPath !== "/")) {
+          const roleKey = role as UserRole
+          if (roleRoutes[roleKey]?.some((allowedPath) => pathname.startsWith(allowedPath) && allowedPath !== "/")) {
             isAuthorized = true
             break
-          } else if (roleRoutes[role]?.includes(pathname)) {
+          } else if (roleRoutes[roleKey]?.includes(pathname)) {
             // For exact matches like "/" or "/settings"
             isAuthorized = true
             break

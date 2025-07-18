@@ -7,9 +7,9 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app.database import get_db, engine, Base
-from app.services.user_service import UserService
-from app.models.user import Role
+from app.core.database import get_db, engine, Base
+from app.domains.auth.services import UserService
+from app.domains.auth.models import Role
 from sqlalchemy.orm import Session
 
 def create_test_user():

@@ -17,6 +17,7 @@ import {
   Upload,
   X,
   AlertCircle,
+  Loader2,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -43,7 +44,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
 import { FileUpload } from "@/components/shared/file-upload"
-import { salesApi } from "@/lib/api"
+import { salesService } from "@/lib/api-services"
 import { CourseRequestStatus, SOPFile, SOPFileStatus } from "@/lib/types"
 
 // Form schemas for each step
@@ -266,6 +267,24 @@ export function NewCourseRequestWizard() {
     sopUploadForm.setValue('sopFiles', uploadedFiles.filter(file => file.id !== fileId))
   }
 
+  const retryFileUpload = async (fileId: string): Promise<void> => {
+    const fileToRetry = uploadedFiles.find(f => f.id === fileId)
+    if (!fileToRetry || !fileToRetry.file) return
+
+    // Reset file status
+    setUploadedFiles(prev => 
+      prev.map(f => f.id === fileId 
+        ? { ...f, status: SOPFileStatus.PENDING, progress: 0, errorMessage: undefined }
+        : f
+      )
+    )
+
+    toast({
+      title: "Retrying upload",
+      description: `Retrying upload for ${fileToRetry.name}...`,
+    })
+  }
+
   const submitRequest = async (): Promise<void> => {
     try {
       setIsSubmitting(true)
@@ -300,42 +319,73 @@ export function NewCourseRequestWizard() {
         internal_notes: trainingNeeds.internalNotes || null
       }
 
-      const response = await fetch('http://localhost:8000/api/sales/course-requests', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify(requestData)
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.detail || 'Failed to submit request')
-      }
-
-      const data = await response.json()
+      const data = await salesService.createCourseRequest(requestData)
       
       // Upload SOP files if any
       if (uploadedFiles.length > 0) {
+        let uploadSuccess = 0
+        let uploadErrors: string[] = []
+
         for (const file of uploadedFiles) {
-          const formData = new FormData()
-          formData.append('file', file.file)
-          if (file.notes) {
-            formData.append('upload_notes', file.notes)
-          }
+          if (!file.file) continue;
+          
+          try {
+            // Update file status to uploading
+            setUploadedFiles(prev => 
+              prev.map(f => f.id === file.id 
+                ? { ...f, status: SOPFileStatus.UPLOADING, progress: 0 }
+                : f
+              )
+            )
 
-          const uploadResponse = await fetch(`http://localhost:8000/api/sales/course-requests/${data.id}/sop`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${localStorage.getItem('token')}`
-            },
-            body: formData
+            await salesService.uploadSOP(
+              data.id, 
+              file.file!,
+              (progress) => {
+                setUploadedFiles(prev => 
+                  prev.map(f => f.id === file.id 
+                    ? { ...f, progress }
+                    : f
+                  )
+                )
+              }
+            )
+
+            // Update file status to completed
+            setUploadedFiles(prev => 
+              prev.map(f => f.id === file.id 
+                ? { ...f, status: SOPFileStatus.COMPLETED, progress: 100 }
+                : f
+              )
+            )
+            uploadSuccess++
+          } catch (error) {
+            // Update file status to error
+            const errorMessage = error instanceof Error ? error.message : `Failed to upload ${file.name}`
+            setUploadedFiles(prev => 
+              prev.map(f => f.id === file.id 
+                ? { ...f, status: SOPFileStatus.ERROR, progress: 0, errorMessage }
+                : f
+              )
+            )
+            uploadErrors.push(errorMessage)
+          }
+        }
+
+        // Show upload summary
+        if (uploadSuccess > 0) {
+          toast({
+            title: "Files uploaded",
+            description: `${uploadSuccess} of ${uploadedFiles.length} files uploaded successfully.`,
           })
+        }
 
-          if (!uploadResponse.ok) {
-            throw new Error(`Failed to upload file ${file.name}`)
-          }
+        if (uploadErrors.length > 0) {
+          toast({
+            title: "Upload errors",
+            description: `${uploadErrors.length} files failed to upload. You can retry them later.`,
+            variant: "destructive"
+          })
         }
       }
 
@@ -692,21 +742,45 @@ export function NewCourseRequestWizard() {
   }
 
   const renderSOPUploadStep = () => {
+    const hasFilesInProgress = uploadedFiles.some(f => 
+      f.status === SOPFileStatus.UPLOADING || f.status === SOPFileStatus.PROCESSING
+    )
+
     return (
       <div className="space-y-6">
         <FileUpload
           onFilesSelected={handleFileUpload}
           onFileRemoved={removeFile}
+          onFileRetry={retryFileUpload}
           uploadedFiles={uploadedFiles}
           maxFiles={5}
-          acceptedTypes={['.pdf', '.doc', '.docx']}
+          acceptedTypes={['.pdf', '.doc', '.docx', '.txt', '.xlsx']}
+          disabled={hasFilesInProgress}
         />
+        
+        {uploadedFiles.length === 0 && (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">
+              SOP documents are optional but highly recommended for creating a customized course.
+            </p>
+          </div>
+        )}
+        
         <div className="flex justify-between">
-          <Button type="button" variant="outline" onClick={prevStep}>
+          <Button type="button" variant="outline" onClick={prevStep} disabled={hasFilesInProgress}>
             <ChevronLeft className="mr-2 h-4 w-4" /> Back
           </Button>
-          <Button onClick={nextStep} disabled={isSubmitting}>
-            Next <ChevronRight className="ml-2 h-4 w-4" />
+          <Button onClick={nextStep} disabled={isSubmitting || hasFilesInProgress}>
+            {hasFilesInProgress ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing files...
+              </>
+            ) : (
+              <>
+                Next <ChevronRight className="ml-2 h-4 w-4" />
+              </>
+            )}
           </Button>
         </div>
       </div>

@@ -9,8 +9,8 @@ from marshmallow import Schema, fields, validate, ValidationError
 from sqlalchemy import func, and_, or_
 
 from app import db
-from app.models.user import User
-from app.models.course import (
+from app.domains.auth.models import User
+from app.domains.courses.models import (
     CourseRequest, Course, RequestRejection, RevisionRequest, 
     CourseRequestStatus
 )

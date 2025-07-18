@@ -12,7 +12,7 @@ def test_env_config():
     print("🔧 Testing environment configuration...")
     
     try:
-        from app.config import settings
+        from app.core.config import settings
         
         print(f"✅ App Name: {settings.APP_NAME}")
         print(f"✅ Database URL: {settings.DATABASE_URL[:50]}...")  # Don't show full URL for security
@@ -29,7 +29,7 @@ def test_database_connection():
     print("\n🗄️  Testing Supabase database connection...")
     
     try:
-        from app.database import engine
+        from app.core.database import engine
         from sqlalchemy import text
         
         # Test basic connection
@@ -59,19 +59,19 @@ def test_model_imports():
     print("\n📋 Testing model imports...")
     
     try:
-        from app.models.user import User, Role, Permission
+        from app.domains.auth.models import User, Role, Permission
         print("✅ User models imported")
         
-        from app.models.sales import CourseRequest, SOPDocument, ClientFeedback
+        from app.domains.sales.models import CourseRequest, SOPDocument, ClientFeedback
         print("✅ Sales models imported")
         
-        from app.models.course import Course, Module, Lesson, Assessment
+        from app.domains.courses.models import Course, Module, Lesson, Assessment
         print("✅ Course models imported")
         
-        from app.services.auth_service import AuthService
+        from app.domains.auth.services import AuthService
         print("✅ Auth service imported")
         
-        from app.services.user_service import UserService
+        from app.domains.auth.services import UserService
         print("✅ User service imported")
         
         return True
@@ -85,7 +85,7 @@ def create_database_tables():
     print("\n🏗️  Creating database tables...")
     
     try:
-        from app.database import Base, engine
+        from app.core.database import Base, engine
         
         # Create all tables
         Base.metadata.create_all(bind=engine)
@@ -133,9 +133,9 @@ def test_authentication():
     print("\n🔐 Testing authentication system...")
     
     try:
-        from app.database import SessionLocal
-        from app.services.auth_service import AuthService
-        from app.models.user import User
+        from app.core.database import SessionLocal
+        from app.domains.auth.services import AuthService
+        from app.domains.auth.models import User
         
         db = SessionLocal()
         

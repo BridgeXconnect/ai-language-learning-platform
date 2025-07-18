@@ -14,15 +14,15 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Backgro
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from app.database import get_db
-from app.services.auth_service import get_current_user
-from app.services.ai_service import ai_service
+from app.core.database import get_db
+from app.domains.auth.services import get_current_user
+from app.domains.ai.services.core import ai_service
 from app.services.rag_service import rag_service
 from app.services.document_service import document_processor
 from app.services.course_generation_service import course_generation_service
-from app.models.user import User
-from app.models.sales import CourseRequest, SOPDocument
-from app.schemas.ai import (
+from app.domains.auth.models import User
+from app.domains.sales.models import CourseRequest, SOPDocument
+from app.domains.ai.schemas import (
     CourseGenerationRequest, CourseGenerationResponse,
     RAGSearchRequest, RAGSearchResponse,
     ContentGenerationRequest, ContentGenerationResponse,
@@ -147,7 +147,7 @@ async def generate_course(
         generation_time = time.time() - start_time
         
         # Get course details for response
-        from app.models.course import Course, Module, Lesson, Exercise, Assessment
+        from app.domains.courses.models import Course, Module, Lesson, Exercise, Assessment
         course = db.query(Course).filter(Course.id == result["course_id"]).first()
         
         modules_count = db.query(Module).filter(Module.course_id == course.id).count()

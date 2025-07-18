@@ -1,0 +1,439 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14
+    environment:
+      POSTGRES_DB: ai_lang_staging
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-staging_secure_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - staging-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-staging_redis_pass}
+    volumes:
+      - redis_staging_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD:-staging_redis_pass}", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - staging-network
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=staging
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-staging_secure_password}@postgres:5432/ai_lang_staging
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-staging_redis_pass}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-staging-secret-key-change-in-production}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - AGENTS_ENABLED=true
+      - ORCHESTRATOR_URL=http://orchestrator:8100
+      - COURSE_PLANNER_URL=http://course-planner:8101
+      - CONTENT_CREATOR_URL=http://content-creator:8102
+      - QUALITY_ASSURANCE_URL=http://quality-assurance:8103
+      - FALLBACK_TO_TRADITIONAL=true
+      - LOG_LEVEL=INFO
+      - CORS_ORIGINS=https://staging.ai-lang.com,http://localhost:3000
+      - ALLOWED_HOSTS=staging.ai-lang.com,localhost
+      - RATE_LIMIT_REQUESTS=1000
+      - RATE_LIMIT_WINDOW=3600
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      orchestrator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - staging-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      target: production
+      args:
+        - NODE_ENV=staging
+        - NEXT_PUBLIC_API_URL=https://staging-api.ai-lang.com
+        - NEXT_PUBLIC_WS_URL=wss://staging-api.ai-lang.com
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=staging
+      - NEXT_PUBLIC_API_URL=https://staging-api.ai-lang.com
+      - NEXT_PUBLIC_WS_URL=wss://staging-api.ai-lang.com
+      - NEXT_PUBLIC_ENVIRONMENT=staging
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - staging-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.25'
+        reservations:
+          memory: 256M
+          cpus: '0.1'
+
+  # Multi-Agent System Services
+  orchestrator:
+    build:
+      context: ./agents/orchestrator
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8100:8100"
+    environment:
+      - ENVIRONMENT=staging
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-staging_secure_password}@postgres:5432/ai_lang_staging
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-staging_redis_pass}@redis:6379/1
+      - COURSE_PLANNER_URL=http://course-planner:8101
+      - CONTENT_CREATOR_URL=http://content-creator:8102
+      - QUALITY_ASSURANCE_URL=http://quality-assurance:8103
+      - AGENTS_ENABLED=true
+      - LOG_LEVEL=INFO
+      - MAX_CONCURRENT_WORKFLOWS=5
+      - WORKFLOW_TIMEOUT=1800
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      course-planner:
+        condition: service_healthy
+      content-creator:
+        condition: service_healthy
+      quality-assurance:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - staging-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  course-planner:
+    build:
+      context: ./agents/course-planner
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8101:8101"
+    environment:
+      - ENVIRONMENT=staging
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-staging_secure_password}@postgres:5432/ai_lang_staging
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-staging_redis_pass}@redis:6379/2
+      - AGENT_NAME=course_planner
+      - LOG_LEVEL=INFO
+      - MAX_SOP_SIZE=50MB
+      - PROCESSING_TIMEOUT=600
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8101/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - staging-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  content-creator:
+    build:
+      context: ./agents/content-creator
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8102:8102"
+    environment:
+      - ENVIRONMENT=staging
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-staging_secure_password}@postgres:5432/ai_lang_staging
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-staging_redis_pass}@redis:6379/3
+      - AGENT_NAME=content_creator
+      - LOG_LEVEL=INFO
+      - MAX_CONTENT_LENGTH=100000
+      - GENERATION_TIMEOUT=900
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8102/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - staging-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  quality-assurance:
+    build:
+      context: ./agents/quality-assurance
+      dockerfile: Dockerfile
+      target: production
+    ports:
+      - "8103:8103"
+    environment:
+      - ENVIRONMENT=staging
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD:-staging_secure_password}@postgres:5432/ai_lang_staging
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-staging_redis_pass}@redis:6379/4
+      - AGENT_NAME=quality_assurance
+      - LOG_LEVEL=INFO
+      - QUALITY_THRESHOLD=0.8
+      - REVIEW_TIMEOUT=300
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8103/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - staging-network
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # Vector Database for Staging
+  vector-db:
+    image: milvusdb/milvus:v2.3.0
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    environment:
+      - ETCD_ENDPOINTS=etcd:2379
+      - MINIO_ADDRESS=minio:9000
+      - MILVUS_CONFIG_PATH=/milvus/configs/milvus.yaml
+    depends_on:
+      - etcd
+      - minio
+    volumes:
+      - milvus_staging_data:/var/lib/milvus
+      - ./config/milvus-staging.yaml:/milvus/configs/milvus.yaml
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - staging-network
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.0
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd_staging_data:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - staging-network
+
+  minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    environment:
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-staging_access_key}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-staging_secret_key}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_staging_data:/data
+    command: minio server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - staging-network
+
+  # Monitoring and Logging
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus-staging.yml:/etc/prometheus/prometheus.yml
+      - prometheus_staging_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - staging-network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-staging_admin_password}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_staging_data:/var/lib/grafana
+      - ./config/grafana-staging.ini:/etc/grafana/grafana.ini
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    restart: unless-stopped
+    networks:
+      - staging-network
+
+  # Load Balancer for Staging
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx-staging.conf:/etc/nginx/nginx.conf
+      - ./ssl/staging:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - staging-network
+
+volumes:
+  postgres_staging_data:
+  redis_staging_data:
+  milvus_staging_data:
+  etcd_staging_data:
+  minio_staging_data:
+  prometheus_staging_data:
+  grafana_staging_data:
+
+networks:
+  staging-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

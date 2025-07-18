@@ -159,7 +159,7 @@ def check_database_connection():
     print("Checking database connection...")
     
     try:
-        from app.database import engine
+        from app.core.database import engine
         from sqlalchemy import text
         
         with engine.connect() as conn:
@@ -178,7 +178,7 @@ def create_database():
     print("Checking if database exists...")
     
     try:
-        from app.config import settings
+        from app.core.config import settings
         import psycopg2
         from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
         
