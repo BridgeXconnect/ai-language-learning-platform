@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: ai-language-learning-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ai-language-learning-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: ai-language-learning-redis
+          property: connectionString
+      - key: ENVIRONMENT
+        value: production
+      - key: CORS_ORIGINS
+        value: https://your-frontend-url.vercel.app
+
+  - type: redis
+    name: ai-language-learning-redis
+    ipAllowList: []
+
+databases:
+  - name: ai-language-learning-db
+    databaseName: ai_lang_db
+    user: ai_lang_user 

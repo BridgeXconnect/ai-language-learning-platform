@@ -22,7 +22,11 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { ThemeSwitcher } from "@/components/theme-switcher" // Assuming you have this
 
-export function Sidebar() {
+interface SidebarProps {
+  className?: string
+}
+
+export function Sidebar({ className }: SidebarProps) {
   const { user, hasRole, logout } = useAuth()
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -52,8 +56,9 @@ export function Sidebar() {
   return (
     <div
       className={cn(
-        "hidden border-r bg-card md:flex flex-col transition-all duration-300 ease-in-out",
+        "border-r bg-card flex flex-col transition-all duration-300 ease-in-out",
         isCollapsed ? "w-20" : "w-64",
+        className
       )}
     >
       <div className="flex h-16 items-center border-b px-4 lg:px-6 shrink-0">
