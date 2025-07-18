@@ -18,10 +18,13 @@ show_status() {
 # Function to create a feature branch
 create_feature() {
     echo "🔧 Creating feature branch..."
-    read -p "Enter feature name (e.g., 'add-ai-chat'): " feature_name
+    echo "💡 Tip: Use hyphens instead of spaces (e.g., 'add-ai-chat' or 'sales-dashboard')"
+    read -p "Enter feature name: " feature_name
     if [ -n "$feature_name" ]; then
-        git checkout -b feature/$feature_name
-        echo "✅ Created and switched to feature/$feature_name"
+        # Replace spaces with hyphens and remove special characters
+        clean_name=$(echo "$feature_name" | tr ' ' '-' | tr -cd 'a-zA-Z0-9\-')
+        git checkout -b feature/$clean_name
+        echo "✅ Created and switched to feature/$clean_name"
     else
         echo "❌ No feature name provided"
     fi
