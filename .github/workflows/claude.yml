@@ -3,12 +3,6 @@ name: Claude Code
 on:
   pull_request:
     types: [opened, synchronize]
-  workflow_dispatch:
-    inputs:
-      prompt:
-        description: 'Prompt for Claude'
-        required: true
-        type: string
 
 jobs:
   claude:
@@ -29,4 +23,3 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          prompt: ${{ github.event.inputs.prompt || 'Review this pull request and provide feedback on code quality, potential issues, and suggestions for improvement.' }}
