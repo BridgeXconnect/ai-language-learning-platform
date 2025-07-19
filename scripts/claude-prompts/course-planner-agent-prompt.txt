@@ -1,0 +1,64 @@
+I need you to create a specialized AI agent for my language learning platform using Archon framework.
+        
+        Current Architecture:
+        - FastAPI backend with Supabase database
+        - Next.js frontend  
+        - Docker containerized services
+        - Existing AI services (ai_service, rag_service, course_generation_service)
+        
+        Database Schema (relevant tables):
+        - course_requests: id, company_name, industry, training_goals, current_english_level
+        - sop_documents: id, course_request_id, file_path, processing_status
+        - courses: id, title, description, cefr_level, status
+        - modules: id, course_id, title, description, order_index
+        - lessons: id, module_id, title, content, duration_minutes
+        
+        
+        AGENT TO CREATE: Course Planning Specialist (course-planner)
+        
+        Description: Analyzes company SOPs and creates comprehensive curriculum structures
+        
+        Key Responsibilities:
+        - Analyze uploaded SOP documents for key business processes
+- Extract industry-specific vocabulary and scenarios
+- Map content to appropriate CEFR levels
+- Create progressive curriculum structures
+- Generate module and lesson outlines
+        
+        Required Tools:
+        - sop_document_analyzer
+- cefr_level_mapper
+- curriculum_structure_generator
+- database_query_tool
+        
+        Database Interactions:
+        - Read from course_requests and sop_documents
+- Create records in courses and modules tables
+- Query existing curriculum templates
+        
+        Please create:
+        1. A complete Pydantic AI agent with proper system prompt
+        2. Tool implementations for all required tools
+        3. Dockerfile for containerization  
+        4. FastAPI server wrapper with health endpoints
+        5. MCP server implementation for agent communication
+        6. Requirements.txt with all dependencies
+        
+        The agent should:
+        - Connect to Supabase using environment variables
+        - Use OpenAI GPT-4 as the language model
+        - Include comprehensive error handling and logging
+        - Follow the existing code patterns in the platform
+        - Be production-ready with proper validation
+        
+        File structure should be:
+        ```
+        agents/course-planner/
+        ├── main.py              # Main agent implementation
+        ├── tools.py             # Tool implementations  
+        ├── server.py            # FastAPI server wrapper
+        ├── mcp_server.py        # MCP server implementation
+        ├── Dockerfile           # Container definition
+        ├── requirements.txt     # Python dependencies
+        └── README.md           # Agent documentation
+        ```

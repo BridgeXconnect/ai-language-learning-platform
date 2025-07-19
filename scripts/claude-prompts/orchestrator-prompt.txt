@@ -1,0 +1,45 @@
+
+        I need you to create an Agent Orchestrator service that coordinates multiple AI agents in a course generation workflow.
+        
+        The orchestrator should:
+        1. Receive course generation requests from the main FastAPI backend
+        2. Coordinate the workflow between 3 agents: course-planner → content-creator → quality-assurance
+        3. Handle agent communication and data flow
+        4. Provide status updates and error handling
+        5. Implement retry logic and fallback mechanisms
+        
+        Workflow:
+        1. Course Planning Agent analyzes SOPs and creates curriculum structure
+        2. Content Creator Agent generates lessons and exercises based on curriculum
+        3. Quality Assurance Agent reviews and improves the generated content
+        4. Return final course to the main backend
+        
+        The orchestrator should:
+        - Use LangGraph for workflow orchestration
+        - Implement proper error handling and retries
+        - Provide real-time status updates
+        - Support both synchronous and asynchronous operations
+        - Include comprehensive logging and monitoring
+        - Connect to the same Supabase database as other agents
+        
+        Create:
+        1. LangGraph workflow definition
+        2. Agent communication layer
+        3. FastAPI server with orchestration endpoints
+        4. Health monitoring and status reporting
+        5. Docker configuration
+        6. MCP server for external integration
+        
+        File structure:
+        ```
+        agents/orchestrator/
+        ├── main.py              # Main orchestrator logic
+        ├── workflow.py          # LangGraph workflow definition
+        ├── server.py            # FastAPI server
+        ├── mcp_server.py        # MCP server
+        ├── agent_client.py      # Agent communication client
+        ├── Dockerfile           # Container definition
+        ├── requirements.txt     # Dependencies
+        └── README.md           # Documentation
+        ```
+        

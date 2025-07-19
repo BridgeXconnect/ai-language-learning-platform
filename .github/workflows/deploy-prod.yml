@@ -1,0 +1,51 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - main
+      - release/*
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r server/requirements.txt
+      - name: Run tests
+        run: |
+          cd server && pytest -q
+      - name: Build Docker images
+        run: |
+          docker-compose -f config/docker/docker-compose.prod.yml build
+      - name: Publish images to registry
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker-compose -f config/docker/docker-compose.prod.yml push
+
+  blue-green-deploy:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy with Docker Compose SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            cd /opt/ai-language-learning-platform
+            git pull origin main
+            docker-compose -f config/docker/docker-compose.prod.yml pull
+            docker-compose -f config/docker/docker-compose.prod.yml up -d --remove-orphans
+            docker image prune -f
+      - name: Run smoke tests
+        run: |
+          curl -f http://${{ secrets.PROD_DOMAIN }}/health || exit 1 

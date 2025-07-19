@@ -1,0 +1,692 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.10, pytest-7.4.3, pluggy-1.5.0
+rootdir: /Users/roymkhabela/Downloads/AI Language Learning Platform/server
+configfile: pyproject.toml
+plugins: anyio-4.9.0, mockito-0.0.4, asyncio-0.21.1, cov-6.2.1, logfire-3.1.0
+asyncio: mode=Mode.STRICT
+collected 23 items
+
+tests/sales/test_story_1_2_training_needs.py FFFFFFF.FFFF..FFF.FF...     [100%]
+
+=================================== FAILURES ===================================
+_____ TestCEFRProgressionValidation.test_valid_cefr_progression_same_level _____
+
+self = <test_story_1_2_training_needs.TestCEFRProgressionValidation object at 0x197dac320>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU2OTF9.uiPpatiP1OK-ik9czogEO9kozmNkS9aGnJzLcf49fIw'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_valid_cefr_progression_same_level(self, auth_headers, sample_course_request_data):
+        """Test valid CEFR progression - same level (reinforcement)"""
+        data = sample_course_request_data.copy()
+        data.update({
+            "current_cefr": "B1",
+            "target_cefr": "B1"
+        })
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:78: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'B1', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+____ TestCEFRProgressionValidation.test_valid_cefr_progression_one_level_up ____
+
+self = <test_story_1_2_training_needs.TestCEFRProgressionValidation object at 0x197dac170>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU2OTZ9.Ru8KoXyyau8SzMS9ZGGdt-z0YowsXiw-lsIWBl1P2wk'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_valid_cefr_progression_one_level_up(self, auth_headers, sample_course_request_data):
+        """Test valid CEFR progression - one level up"""
+        data = sample_course_request_data.copy()
+        data.update({
+            "current_cefr": "A1",
+            "target_cefr": "A2"
+        })
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:94: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A1', 'target_cefr': 'A2', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+___ TestCEFRProgressionValidation.test_valid_cefr_progression_two_levels_up ____
+
+self = <test_story_1_2_training_needs.TestCEFRProgressionValidation object at 0x197dac6b0>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3MDB9.UhaYNYsXNSRpYVKTM-zFYkLIgQEL6PUHy_yLdrsqqOY'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_valid_cefr_progression_two_levels_up(self, auth_headers, sample_course_request_data):
+        """Test valid CEFR progression - two levels up (accelerated)"""
+        data = sample_course_request_data.copy()
+        data.update({
+            "current_cefr": "A1",
+            "target_cefr": "B1"
+        })
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:110: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A1', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+____ TestCEFRProgressionValidation.test_invalid_cefr_progression_regression ____
+
+self = <test_story_1_2_training_needs.TestCEFRProgressionValidation object at 0x197dac860>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3MDV9.epBG-qCUtdbFa0rMpKbBTGLpUcAT5vGYTKg_7fyScWI'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_invalid_cefr_progression_regression(self, auth_headers, sample_course_request_data):
+        """Test invalid CEFR progression - regression not allowed"""
+        data = sample_course_request_data.copy()
+        data.update({
+            "current_cefr": "B2",
+            "target_cefr": "B1"
+        })
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 422
+E       assert 500 == 422
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:126: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'B2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+_ TestCEFRProgressionValidation.test_invalid_cefr_progression_too_many_levels __
+
+self = <test_story_1_2_training_needs.TestCEFRProgressionValidation object at 0x197daca10>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3MDl9.yerxOo3AENjiH84wfpmPDcwVbulqslL7eMsQndfnfAw'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_invalid_cefr_progression_too_many_levels(self, auth_headers, sample_course_request_data):
+        """Test invalid CEFR progression - more than 2 levels jump"""
+        data = sample_course_request_data.copy()
+        data.update({
+            "current_cefr": "A1",
+            "target_cefr": "C1"
+        })
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 422
+E       assert 500 == 422
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:141: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A1', 'target_cefr': 'C1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+____ TestTrainingObjectivesValidation.test_valid_training_objectives_length ____
+
+self = <test_story_1_2_training_needs.TestTrainingObjectivesValidation object at 0x197dacb90>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3MTN9.06xdfdf2FeOVUOxPh7ZvJwyYxVIZ1FcggI5VBnAFVyA'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_valid_training_objectives_length(self, auth_headers, sample_course_request_data):
+        """Test valid training objectives within character limit"""
+        data = sample_course_request_data.copy()
+        data["training_objectives"] = "A" * 500  # Exactly 500 characters
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:156: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ... (202 characters truncated) ... AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+__ TestTrainingObjectivesValidation.test_invalid_training_objectives_too_long __
+
+self = <test_story_1_2_training_needs.TestTrainingObjectivesValidation object at 0x197dacd40>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3MTd9.2_JOFU_1J62nB1wcYYFSEkLhTdsOkxYAjLJJ-6aupFM'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_invalid_training_objectives_too_long(self, auth_headers, sample_course_request_data):
+        """Test invalid training objectives exceeding character limit"""
+        data = sample_course_request_data.copy()
+        data["training_objectives"] = "A" * 501  # 501 characters - too long
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 422
+E       assert 500 == 422
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:168: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ... (203 characters truncated) ... AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+____________ TestPainPointsValidation.test_valid_pain_points_length ____________
+
+self = <test_story_1_2_training_needs.TestPainPointsValidation object at 0x197dad0d0>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3MjZ9.IK_iZfNxoTHXqYTwAcH5al_SpkB43Ku9Y2Zd4-16qhc'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_valid_pain_points_length(self, auth_headers, sample_course_request_data):
+        """Test valid pain points within character limit"""
+        data = sample_course_request_data.copy()
+        data["pain_points"] = "B" * 300  # Exactly 300 characters
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:194: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB ... (2 characters truncated) ... BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+__________ TestPainPointsValidation.test_invalid_pain_points_too_long __________
+
+self = <test_story_1_2_training_needs.TestPainPointsValidation object at 0x197dad280>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3MzB9.6bt7JxBCngXwARnoMbauhuOfpGolcLu6s8cDOqJe3BI'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_invalid_pain_points_too_long(self, auth_headers, sample_course_request_data):
+        """Test invalid pain points exceeding character limit"""
+        data = sample_course_request_data.copy()
+        data["pain_points"] = "B" * 301  # 301 characters - too long
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 422
+E       assert 500 == 422
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:206: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB ... (3 characters truncated) ... BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+______________ TestPainPointsValidation.test_optional_pain_points ______________
+
+self = <test_story_1_2_training_needs.TestPainPointsValidation object at 0x197dad430>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3MzR9.Y3b1Uj9vNQHu0ci6VQqBG0VmrzFgRMy_wrayPdc3rv8'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_optional_pain_points(self, auth_headers, sample_course_request_data):
+        """Test that pain points are optional"""
+        data = sample_course_request_data.copy()
+        data["pain_points"] = None
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:218: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': None, 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+______ TestParticipantCountValidation.test_valid_participant_count_range _______
+
+self = <test_story_1_2_training_needs.TestParticipantCountValidation object at 0x197dad5e0>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3Mzh9.3ry5pZjNSS8eEN4o8NhMTDkjEPKa4a71SlyAuy3DgNs'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_valid_participant_count_range(self, auth_headers, sample_course_request_data):
+        """Test valid participant count within range"""
+        for count in [1, 50, 100]:
+            data = sample_course_request_data.copy()
+            data["cohort_size"] = count
+    
+            response = client.post("/api/sales/course-requests",
+                                 json=data,
+                                 headers=auth_headers)
+    
+>           assert response.status_code == 201
+E           assert 500 == 201
+E            +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:234: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 1, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+_____________ TestSpecificRolesField.test_specific_roles_optional ______________
+
+self = <test_story_1_2_training_needs.TestSpecificRolesField object at 0x197dadac0>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3NTB9.QTdrQ6ZXDzkYvD--eTT8QOm8y1GfOXBFYGUW-fbmuPo'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_specific_roles_optional(self, auth_headers, sample_course_request_data):
+        """Test that specific roles field is optional"""
+        data = sample_course_request_data.copy()
+        data["specific_requirements"] = None
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:273: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...fidence', NULL, NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': None, 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+___________ TestSpecificRolesField.test_specific_roles_with_content ____________
+
+self = <test_story_1_2_training_needs.TestSpecificRolesField object at 0x197dadc70>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3NTV9.vBQnKa7IZvSVxELGWkqU2uacKr8BdVhfesy8M_XrVhw'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_specific_roles_with_content(self, auth_headers, sample_course_request_data):
+        """Test specific roles field with content"""
+        data = sample_course_request_data.copy()
+        data["specific_requirements"] = "Sales team, Customer service, Marketing department"
+    
+        response = client.post("/api/sales/course-requests",
+                             json=data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:285: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...ng department', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team, Customer service, Marketing department', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+____________ TestDeliveryMethodOptions.test_valid_delivery_methods _____________
+
+self = <test_story_1_2_training_needs.TestDeliveryMethodOptions object at 0x197daddc0>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3NTl9.44IVyPZ-ZmcX1qt4FNYawk12tJbwqtm-p0aK2abaN6I'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_valid_delivery_methods(self, auth_headers, sample_course_request_data):
+        """Test all valid delivery methods"""
+        valid_methods = ["in_person", "virtual", "blended"]
+    
+        for method in valid_methods:
+            data = sample_course_request_data.copy()
+            data["delivery_method"] = method
+    
+            response = client.post("/api/sales/course-requests",
+                                 json=data,
+                                 headers=auth_headers)
+    
+>           assert response.status_code == 201
+E           assert 500 == 201
+E            +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:303: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...esentatives', NULL, NULL, 'IN_PERSON', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'IN_PERSON', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+_ TestIntegrationWithClientInformation.test_complete_request_with_client_and_training_info _
+
+self = <test_story_1_2_training_needs.TestIntegrationWithClientInformation object at 0x197dadf40>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3Njd9.h0c0yBKjm7VNssOtWVVzpGSohpnmnwcvcb9O15ptCys'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+
+    def test_complete_request_with_client_and_training_info(self, auth_headers, sample_course_request_data):
+        """Test complete request with both client and training information"""
+        response = client.post("/api/sales/course-requests",
+                             json=sample_course_request_data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:326: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+___ TestIntegrationWithClientInformation.test_request_update_training_needs ____
+
+self = <test_story_1_2_training_needs.TestIntegrationWithClientInformation object at 0x197dad220>
+auth_headers = {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0X3NhbGVzX3VzZXIiLCJleHAiOjE3NTI3NjU3NzF9.pwp2jBDseJV4FDzEAWrjGeXTMrU-VA2PavbEHiBeEFg'}
+sample_course_request_data = {'cohort_size': 15, 'company_name': 'TechCorp Inc', 'contact_email': 'john@techcorp.com', 'contact_person': 'John Doe', ...}
+db = <sqlalchemy.orm.session.Session object at 0x19e5258e0>
+
+    def test_request_update_training_needs(self, auth_headers, sample_course_request_data, db: Session):
+        """Test updating training needs information"""
+        # Create initial request
+        response = client.post("/api/sales/course-requests",
+                             json=sample_course_request_data,
+                             headers=auth_headers)
+    
+>       assert response.status_code == 201
+E       assert 500 == 201
+E        +  where 500 = <Response [500 Internal Server Error]>.status_code
+
+tests/sales/test_story_1_2_training_needs.py:348: AssertionError
+----------------------------- Captured stdout call -----------------------------
+ERROR in create_course_request: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum priority: "NORMAL"
+LINE 1: ...presentatives', NULL, NULL, 'BLENDED', '8-weeks', 'NORMAL', ...
+                                                             ^
+
+[SQL: INSERT INTO course_requests (sales_user_id, company_name, industry, company_size, location, website, contact_person, contact_email, contact_phone, decision_maker, decision_maker_role, project_title, project_description, estimated_budget, timeline, urgency, has_existing_training, existing_training_description, participant_count, current_english_level, target_english_level, training_goals, specific_challenges, success_metrics, cohort_size, current_cefr, target_cefr, training_objectives, pain_points, specific_requirements, course_length_hours, lessons_per_module, delivery_method, preferred_schedule, priority, status, internal_notes, workflow_id, generation_progress, quality_score, submitted_at) VALUES (%(sales_user_id)s, %(company_name)s, %(industry)s, %(company_size)s, %(location)s, %(website)s, %(contact_person)s, %(contact_email)s, %(contact_phone)s, %(decision_maker)s, %(decision_maker_role)s, %(project_title)s, %(project_description)s, %(estimated_budget)s, %(timeline)s, %(urgency)s, %(has_existing_training)s, %(existing_training_description)s, %(participant_count)s, %(current_english_level)s, %(target_english_level)s, %(training_goals)s, %(specific_challenges)s, %(success_metrics)s, %(cohort_size)s, %(current_cefr)s, %(target_cefr)s, %(training_objectives)s, %(pain_points)s, %(specific_requirements)s, %(course_length_hours)s, %(lessons_per_module)s, %(delivery_method)s, %(preferred_schedule)s, %(priority)s, %(status)s, %(internal_notes)s, %(workflow_id)s, %(generation_progress)s, %(quality_score)s, %(submitted_at)s) RETURNING course_requests.id, course_requests.created_at, course_requests.updated_at]
+[parameters: {'sales_user_id': 1, 'company_name': 'TechCorp Inc', 'industry': 'Technology', 'company_size': None, 'location': None, 'website': None, 'contact_person': 'John Doe', 'contact_email': 'john@techcorp.com', 'contact_phone': '+1-555-123-4567', 'decision_maker': None, 'decision_maker_role': None, 'project_title': None, 'project_description': None, 'estimated_budget': None, 'timeline': None, 'urgency': 'MEDIUM', 'has_existing_training': False, 'existing_training_description': None, 'participant_count': None, 'current_english_level': None, 'target_english_level': None, 'training_goals': None, 'specific_challenges': None, 'success_metrics': None, 'cohort_size': 15, 'current_cefr': 'A2', 'target_cefr': 'B1', 'training_objectives': 'Improve business English communication skills for international meetings and presentations', 'pain_points': 'Difficulty with technical vocabulary and presentation confidence', 'specific_requirements': 'Sales team and customer service representatives', 'course_length_hours': None, 'lessons_per_module': None, 'delivery_method': 'BLENDED', 'preferred_schedule': '8-weeks', 'priority': 'NORMAL', 'status': 'DRAFT', 'internal_notes': None, 'workflow_id': None, 'generation_progress': None, 'quality_score': None, 'submitted_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+=============================== warnings summary ===============================
+../../../miniforge3/lib/python3.12/site-packages/pydantic/_internal/_config.py:323: 19 warnings
+  /Users/roymkhabela/miniforge3/lib/python3.12/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+app/database.py:46
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/database.py:46: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../../miniforge3/lib/python3.12/site-packages/passlib/utils/__init__.py:854
+  /Users/roymkhabela/miniforge3/lib/python3.12/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+    from crypt import crypt as _crypt
+
+app/schemas/course.py:10
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/course.py:10: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('cefr_level')
+
+app/schemas/course.py:23
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/course.py:23: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('cefr_level')
+
+app/schemas/course.py:82
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/course.py:82: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('status')
+
+app/schemas/sales.py:64
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:64: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('cohort_size')
+
+app/schemas/sales.py:70
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:70: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('course_length_hours')
+
+app/schemas/sales.py:132
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:132: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('participant_count')
+
+app/schemas/sales.py:138
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:138: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('target_roles')
+
+app/schemas/sales.py:144
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:144: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('communication_scenarios')
+
+app/schemas/sales.py:150
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:150: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('website')
+
+app/schemas/sales.py:232
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:232: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('feedback_type')
+
+app/schemas/sales.py:238
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:238: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('rating')
+
+../../../miniforge3/lib/python3.12/site-packages/PyPDF2/__init__.py:21
+  /Users/roymkhabela/miniforge3/lib/python3.12/site-packages/PyPDF2/__init__.py:21: DeprecationWarning: PyPDF2 is deprecated. Please move to the pypdf library instead.
+    warnings.warn(
+
+app/schemas/ai.py:14
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:14: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('content_type')
+
+app/schemas/ai.py:47
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:47: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('duration_weeks')
+
+app/schemas/ai.py:53
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:53: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('lessons_per_week')
+
+app/schemas/ai.py:59
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:59: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('temperature')
+
+app/schemas/ai.py:89
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:89: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('query')
+
+app/schemas/ai.py:95
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:95: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('content_type')
+
+app/schemas/ai.py:118
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:118: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('content_type')
+
+app/schemas/ai.py:139
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:139: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('analysis_type')
+
+app/schemas/ai.py:174
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:174: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('component_type')
+
+app/schemas/ai.py:200
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:200: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('cefr_level')
+
+app/schemas/ai.py:206
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:206: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('text')
+
+app/schemas/ai.py:230
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:230: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('cefr_level')
+
+app/schemas/ai.py:236
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:236: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('learning_style')
+
+app/schemas/ai.py:265
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:265: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('status')
+
+app/schemas/ai.py:272
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/ai.py:272: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('progress_percentage')
+
+app/services/websocket_service.py:42
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/services/websocket_service.py:42: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "last_reset": datetime.utcnow().isoformat()
+
+app/services/agent_health_service.py:99
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/services/agent_health_service.py:99: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "monitoring_start_time": datetime.utcnow()
+
+app/services/error_handling_service.py:135
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/services/error_handling_service.py:135: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "last_reset": datetime.utcnow()
+
+app/routes/agent_routes.py:64
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/routes/agent_routes.py:64: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "last_reset": datetime.utcnow().isoformat()
+
+app/main.py:35
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/main.py:35: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    @app.on_event("startup")
+
+../../../miniforge3/lib/python3.12/site-packages/fastapi/applications.py:4495
+  /Users/roymkhabela/miniforge3/lib/python3.12/site-packages/fastapi/applications.py:4495: DeprecationWarning: 
+          on_event is deprecated, use lifespan event handlers instead.
+  
+          Read more about it in the
+          [FastAPI docs for Lifespan Events](https://fastapi.tiangolo.com/advanced/events/).
+          
+    return self.router.on_event(event_type)
+
+tests/sales/test_story_1_2_training_needs.py: 23 warnings
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/services/auth_service.py:30: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+================================ tests coverage ================================
+______________ coverage: platform darwin, python 3.12.10-final-0 _______________
+
+Name                                        Stmts   Miss  Cover   Missing
+-------------------------------------------------------------------------
+app/__init__.py                                 0      0   100%
+app/config.py                                  61      9    85%   69, 77-86
+app/database.py                                40     19    52%   16-21, 28-29, 59-65, 70-80
+app/init_db.py                                104    104     0%   1-349
+app/main.py                                    40     13    68%   37-40, 53, 63-67, 72, 78-79
+app/middleware/auth_middleware.py              38     24    37%   12-49, 53, 57, 61, 65, 69
+app/models/course.py                           87      0   100%
+app/models/sales.py                           121      0   100%
+app/models/user.py                             53     10    81%   37, 40, 43-46, 49, 52, 76, 86
+app/routes/agent_routes.py                    840    728    13%   76-80, 86-102, 106-185, 189-241, 245-256, 261-339, 350-395, 404-490, 510-838, 852-898, 907-1043, 1053-1118, 1128-1191, 1200-1253, 1264-1314, 1323-1338, 1348-1363, 1374-1391, 1400-1426, 1437-1459, 1469-1491, 1501-1535, 1544-1569, 1578-1603, 1612-1626, 1637-1653, 1663-1685, 1695-1727, 1738-1779, 1788-1806, 1816-1836, 1850-1894, 1904-1925, 1934-1959, 1968-1993, 1999-2018, 2027-2046, 2053-2059, 2069-2075, 2085
+app/routes/ai_routes.py                       179    134    25%   43, 62-172, 186-187, 196-223, 233-275, 293-351, 366-400, 409-434, 445-467, 482-485, 494-505, 513-520
+app/routes/auth_routes.py                      55     33    40%   22-43, 47-60, 67-71, 81-87, 94-107, 118-137
+app/routes/course_routes.py                   123     90    27%   32-47, 55-67, 75-86, 95-114, 122-137, 145-159, 168-198, 207-214, 223-244, 253-255, 264-277
+app/routes/sales_routes.py                    219    173    21%   39-56, 74, 85-143, 152-175, 185-213, 222-241, 250-269, 281-338, 347-363, 373-397, 408-429, 438-454, 463-472, 481-485
+app/routes/sop_routes.py                      100     78    22%   31-120, 132-148, 160-193, 206-276, 290-324, 333
+app/schemas/ai.py                             212     52    75%   16-23, 49-51, 55-57, 61-63, 91-93, 97-100, 120-123, 141-144, 176-179, 202-204, 208-210, 232-234, 238-241, 267-270, 274-276
+app/schemas/auth.py                            52      5    90%   36-40
+app/schemas/course.py                         132      9    93%   12-14, 25-27, 84-86
+app/schemas/sales.py                          221     22    90%   72-74, 134-136, 140-142, 146-148, 152-156, 234-236, 240-242
+app/services/agent_health_service.py          276    195    29%   112-122, 130-145, 153-165, 169-263, 269-303, 309-338, 342-352, 356-365, 369-378, 382-395, 399-406, 410-448, 452-470, 476, 483-521, 533-536, 540, 553-557, 561-567
+app/services/ai_service.py                     97     64    34%   16-20, 47, 51-53, 65-89, 101-113, 125-133, 145-198, 216-252, 268-301, 320-351
+app/services/audit_service.py                 286    187    35%   116-119, 123-130, 147-178, 191-225, 236-271, 284-298, 316-346, 369-413, 434-452, 469-512, 523-531, 536-578, 588-592, 605-629, 634-674, 680-707, 718-743, 749-769, 780
+app/services/auth_service.py                   76     31    59%   18, 22, 28, 42-50, 61-64, 68-73, 77-85, 96, 100, 110-119
+app/services/course_generation_service.py     130    101    22%   40-114, 125-158, 168-189, 201-229, 241-292, 303-330, 342-368, 373-397, 424-446
+app/services/course_service.py                161    124    23%   17-32, 36, 46-53, 61-77, 81-91, 95-107, 116-139, 148-170, 181-195, 199, 209-223, 235-250, 254, 264-278
+app/services/document_service.py              190    162    15%   18-23, 44, 49-75, 80-89, 94-123, 133-175, 185-211, 221-261, 266-336, 341-387
+app/services/error_handling_service.py        281    202    28%   147-193, 205-296, 309-342, 350-367, 372-394, 399-433, 438-450, 455-465, 470-479, 484-496, 501-524, 529-533, 538-543, 548-567, 575-587, 605-613, 618-626, 643-650
+app/services/rag_service.py                   187    137    27%   18-23, 46-48, 56, 60-66, 70-104, 108-133, 137, 147-150, 161, 171-223, 234-257, 269-297, 302-333, 341-348, 352-359, 363, 371-378, 382-384
+app/services/sales_service.py                 183    115    37%   40-41, 54-62, 67, 79-90, 99-112, 117-127, 132-139, 149, 155-157, 171-185, 190, 195, 207-224, 229-236, 247-255, 260, 271-281, 288-343, 363-373, 378-394
+app/services/sop_processor.py                 222    175    21%   93-170, 176-197, 202-239, 247-285, 290-312, 317-336, 341-390, 395-440, 449-489, 496
+app/services/user_service.py                   96     70    27%   19-42, 46, 50, 54, 63-66, 74-94, 98-108, 117-132, 136, 144-153
+app/services/websocket_service.py             222    178    20%   47-86, 90-115, 119-124, 132-134, 138-143, 150-152, 156-187, 191-208, 212-228, 232-246, 250-270, 274-285, 289-293, 297-307, 311, 323-337, 359-362, 366-373, 377-385, 389-422
+-------------------------------------------------------------------------
+TOTAL                                        5084   3244    36%
+Coverage HTML written to dir htmlcov
+=========================== short test summary info ============================
+FAILED tests/sales/test_story_1_2_training_needs.py::TestCEFRProgressionValidation::test_valid_cefr_progression_same_level
+FAILED tests/sales/test_story_1_2_training_needs.py::TestCEFRProgressionValidation::test_valid_cefr_progression_one_level_up
+FAILED tests/sales/test_story_1_2_training_needs.py::TestCEFRProgressionValidation::test_valid_cefr_progression_two_levels_up
+FAILED tests/sales/test_story_1_2_training_needs.py::TestCEFRProgressionValidation::test_invalid_cefr_progression_regression
+FAILED tests/sales/test_story_1_2_training_needs.py::TestCEFRProgressionValidation::test_invalid_cefr_progression_too_many_levels
+FAILED tests/sales/test_story_1_2_training_needs.py::TestTrainingObjectivesValidation::test_valid_training_objectives_length
+FAILED tests/sales/test_story_1_2_training_needs.py::TestTrainingObjectivesValidation::test_invalid_training_objectives_too_long
+FAILED tests/sales/test_story_1_2_training_needs.py::TestPainPointsValidation::test_valid_pain_points_length
+FAILED tests/sales/test_story_1_2_training_needs.py::TestPainPointsValidation::test_invalid_pain_points_too_long
+FAILED tests/sales/test_story_1_2_training_needs.py::TestPainPointsValidation::test_optional_pain_points
+FAILED tests/sales/test_story_1_2_training_needs.py::TestParticipantCountValidation::test_valid_participant_count_range
+FAILED tests/sales/test_story_1_2_training_needs.py::TestSpecificRolesField::test_specific_roles_optional
+FAILED tests/sales/test_story_1_2_training_needs.py::TestSpecificRolesField::test_specific_roles_with_content
+FAILED tests/sales/test_story_1_2_training_needs.py::TestDeliveryMethodOptions::test_valid_delivery_methods
+FAILED tests/sales/test_story_1_2_training_needs.py::TestIntegrationWithClientInformation::test_complete_request_with_client_and_training_info
+FAILED tests/sales/test_story_1_2_training_needs.py::TestIntegrationWithClientInformation::test_request_update_training_needs
+============ 16 failed, 7 passed, 77 warnings in 157.41s (0:02:37) =============

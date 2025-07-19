@@ -1,0 +1,117 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.10, pytest-7.4.3, pluggy-1.5.0
+rootdir: /Users/roymkhabela/Downloads/AI Language Learning Platform/server
+configfile: pyproject.toml
+plugins: anyio-4.9.0, mockito-0.0.4, asyncio-0.21.1, cov-6.2.1, logfire-3.1.0
+asyncio: mode=Mode.STRICT
+collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+________ ERROR collecting tests/sales/test_story_1_2_training_needs.py _________
+../../miniforge3/lib/python3.12/site-packages/_pytest/runner.py:341: in from_call
+    result: Optional[TResult] = func()
+../../miniforge3/lib/python3.12/site-packages/_pytest/runner.py:372: in <lambda>
+    call = CallInfo.from_call(lambda: list(collector.collect()), "collect")
+../../miniforge3/lib/python3.12/site-packages/_pytest/python.py:531: in collect
+    self._inject_setup_module_fixture()
+../../miniforge3/lib/python3.12/site-packages/_pytest/python.py:545: in _inject_setup_module_fixture
+    self.obj, ("setUpModule", "setup_module")
+../../miniforge3/lib/python3.12/site-packages/_pytest/python.py:310: in obj
+    self._obj = obj = self._getobj()
+../../miniforge3/lib/python3.12/site-packages/_pytest/python.py:528: in _getobj
+    return self._importtestmodule()
+../../miniforge3/lib/python3.12/site-packages/_pytest/python.py:617: in _importtestmodule
+    mod = import_path(self.path, mode=importmode, root=self.config.rootpath)
+../../miniforge3/lib/python3.12/site-packages/_pytest/pathlib.py:567: in import_path
+    importlib.import_module(module_name)
+../../miniforge3/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+<frozen importlib._bootstrap>:1387: in _gcd_import
+    ???
+<frozen importlib._bootstrap>:1360: in _find_and_load
+    ???
+<frozen importlib._bootstrap>:1331: in _find_and_load_unlocked
+    ???
+<frozen importlib._bootstrap>:935: in _load_unlocked
+    ???
+../../miniforge3/lib/python3.12/site-packages/_pytest/assertion/rewrite.py:186: in exec_module
+    exec(co, module.__dict__)
+server/tests/sales/test_story_1_2_training_needs.py:14: in <module>
+    from app.main import app
+server/app/main.py:6: in <module>
+    from app.routes import auth_routes, course_routes, sales_routes, ai_routes, agent_routes, sop_routes
+server/app/routes/ai_routes.py:19: in <module>
+    from app.services.ai_service import ai_service
+server/app/services/ai_service.py:359: in <module>
+    ai_service = AIService()
+server/app/services/ai_service.py:43: in __init__
+    self.anthropic_client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
+../../miniforge3/lib/python3.12/site-packages/anthropic/_client.py:122: in __init__
+    super().__init__(
+../../miniforge3/lib/python3.12/site-packages/anthropic/_base_client.py:825: in __init__
+    self._client = http_client or SyncHttpxClientWrapper(
+../../miniforge3/lib/python3.12/site-packages/anthropic/_base_client.py:723: in __init__
+    super().__init__(**kwargs)
+E   TypeError: Client.__init__() got an unexpected keyword argument 'proxies'
+=============================== warnings summary ===============================
+../../miniforge3/lib/python3.12/site-packages/pydantic/_internal/_config.py:323: 14 warnings
+  /Users/roymkhabela/miniforge3/lib/python3.12/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+server/app/database.py:46
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/database.py:46: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+../../miniforge3/lib/python3.12/site-packages/passlib/utils/__init__.py:854
+  /Users/roymkhabela/miniforge3/lib/python3.12/site-packages/passlib/utils/__init__.py:854: DeprecationWarning: 'crypt' is deprecated and slated for removal in Python 3.13
+    from crypt import crypt as _crypt
+
+server/app/schemas/course.py:10
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/course.py:10: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('cefr_level')
+
+server/app/schemas/course.py:23
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/course.py:23: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('cefr_level')
+
+server/app/schemas/course.py:82
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/course.py:82: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('status')
+
+server/app/schemas/sales.py:64
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:64: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('cohort_size')
+
+server/app/schemas/sales.py:70
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:70: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('course_length_hours')
+
+server/app/schemas/sales.py:132
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:132: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('participant_count')
+
+server/app/schemas/sales.py:138
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:138: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('target_roles')
+
+server/app/schemas/sales.py:144
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:144: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('communication_scenarios')
+
+server/app/schemas/sales.py:150
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:150: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('website')
+
+server/app/schemas/sales.py:232
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:232: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('feedback_type')
+
+server/app/schemas/sales.py:238
+  /Users/roymkhabela/Downloads/AI Language Learning Platform/server/app/schemas/sales.py:238: PydanticDeprecatedSince20: Pydantic V1 style `@validator` validators are deprecated. You should migrate to Pydantic V2 style `@field_validator` validators, see the migration guide for more details. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    @validator('rating')
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR server/tests/sales/test_story_1_2_training_needs.py - TypeError: Client...
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+======================== 27 warnings, 1 error in 21.52s ========================
