@@ -3,7 +3,7 @@ Courses Domain - Models
 Consolidated from: course.py, server_models_course.py
 """
 
-from app import db
+from app.core.database import Base
 from app.core.database import Base
 from datetime import datetime
 from enum import Enum

@@ -237,7 +237,7 @@ def create_sample_sales_data(db: Session):
             "lessons_per_module": 5,
             "delivery_method": DeliveryMethod.VIRTUAL,
             "preferred_schedule": "3 sessions per week, 1.5 hours each",
-            "priority": Priority.NORMAL,
+            "priority": Priority.MEDIUM,
             "status": RequestStatus.IN_PROGRESS
         },
         {

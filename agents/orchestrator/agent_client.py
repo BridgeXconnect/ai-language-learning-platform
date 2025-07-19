@@ -1,450 +1,416 @@
 """
-Agent Communication Client
-Handles HTTP communication with all specialized agents
+Pydantic-AI based agent client for orchestrating multi-agent course generation
+Provides structured communication with Course Planner, Content Creator, and Quality Assurance agents
 """
 
-import os
-import json
 import logging
-from typing import Dict, Any, Optional
 import asyncio
-import aiohttp
+import httpx
+from typing import Dict, Any, Optional, List
 from datetime import datetime
+from dataclasses import dataclass
+from pydantic import BaseModel, Field
+
+from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.openai import OpenAIResponsesModel
 
 logger = logging.getLogger(__name__)
 
+# Pydantic models for structured communication
+class CourseRequest(BaseModel):
+    """Structured course request model."""
+    course_request_id: str
+    company_name: str
+    industry: str
+    training_goals: List[str]
+    current_english_level: str
+    duration_weeks: int = Field(default=8, ge=1, le=52)
+    target_audience: str = "Professional staff"
+    specific_needs: Optional[str] = None
+
+class PlanningRequest(BaseModel):
+    """Structured planning request model."""
+    course_request_id: str
+    company_name: str
+    industry: str
+    training_goals: List[str]
+    current_english_level: str
+    duration_weeks: int
+    target_audience: str
+    specific_needs: Optional[str] = None
+
+class ContentRequest(BaseModel):
+    """Structured content creation request model."""
+    course_request_id: str
+    curriculum: Dict[str, Any]
+    company_name: str
+    industry: str
+    current_english_level: str
+
+class QualityRequest(BaseModel):
+    """Structured quality assurance request model."""
+    course_request_id: str
+    content: Dict[str, Any]
+    company_name: str
+    industry: str
+    current_english_level: str
+
+class ImprovementRequest(BaseModel):
+    """Structured content improvement request model."""
+    course_request_id: str
+    content: Dict[str, Any]
+    qa_report: Dict[str, Any]
+    company_name: str
+    industry: str
+
+@dataclass
+class AgentDependencies:
+    """Dependencies for agent operations."""
+    http_client: httpx.AsyncClient
+    base_urls: Dict[str, str]
+    api_keys: Dict[str, str]
+
 class AgentClient:
-    """Client for communicating with all specialized agents."""
+    """Pydantic-AI based client for orchestrating multi-agent course generation."""
     
-    def __init__(self):
-        # Agent endpoints configuration
-        self.agent_endpoints = {
-            "course_planner": {
-                "base_url": os.getenv("COURSE_PLANNER_URL", "http://localhost:8101"),
-                "health_endpoint": "/health",
-                "capabilities_endpoint": "/capabilities"
-            },
-            "content_creator": {
-                "base_url": os.getenv("CONTENT_CREATOR_URL", "http://localhost:8102"),
-                "health_endpoint": "/health",
-                "capabilities_endpoint": "/capabilities"
-            },
-            "quality_assurance": {
-                "base_url": os.getenv("QUALITY_ASSURANCE_URL", "http://localhost:8103"),
-                "health_endpoint": "/health",
-                "capabilities_endpoint": "/capabilities"
-            }
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
+        """Initialize the agent client."""
+        
+        self.config = config or {}
+        self.base_urls = {
+            "course_planner": self.config.get("course_planner_url", "http://localhost:8001"),
+            "content_creator": self.config.get("content_creator_url", "http://localhost:8002"),
+            "quality_assurance": self.config.get("quality_assurance_url", "http://localhost:8003"),
+            "ai_tutor": self.config.get("ai_tutor_url", "http://localhost:8004")
         }
         
-        # HTTP client configuration
-        self.timeout = aiohttp.ClientTimeout(total=300)  # 5 minutes
-        self.retry_attempts = 3
-        self.retry_delay = 2  # seconds
-        
-        # Performance tracking
-        self.request_metrics = {
-            "total_requests": 0,
-            "successful_requests": 0,
-            "failed_requests": 0,
-            "average_response_time": 0.0,
-            "agent_response_times": {}
-        }
-    
-    async def call_course_planner(self, action: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Call the Course Planner Agent."""
-        
-        endpoint_map = {
-            "plan_course": "/plan-course",
-            "validate_request": "/validate-request",
-            "get_capabilities": "/capabilities"
+        self.api_keys = {
+            "openai": self.config.get("openai_api_key"),
+            "anthropic": self.config.get("anthropic_api_key")
         }
         
-        endpoint = endpoint_map.get(action)
-        if not endpoint:
-            raise ValueError(f"Unknown Course Planner action: {action}")
+        # Initialize Pydantic-AI agents
+        self._init_agents()
         
-        return await self._make_agent_request("course_planner", endpoint, data)
+        # HTTP client for direct API calls
+        self.http_client = httpx.AsyncClient(timeout=30.0)
+        
+        # Agent dependencies
+        self.deps = AgentDependencies(
+            http_client=self.http_client,
+            base_urls=self.base_urls,
+            api_keys=self.api_keys
+        )
     
-    async def call_content_creator(self, action: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Call the Content Creator Agent."""
+    def _init_agents(self):
+        """Initialize Pydantic-AI agents for each role."""
         
-        endpoint_map = {
-            "create_lesson_content": "/create-lesson",
-            "create_exercises": "/create-exercises",
-            "create_assessment": "/create-assessment",
-            "adapt_content": "/adapt-content",
-            "get_capabilities": "/capabilities"
-        }
+        # Course Planner Agent
+        self.course_planner_agent = Agent(
+            'openai:gpt-4o',
+            deps_type=AgentDependencies,
+            output_type=Dict[str, Any],
+            system_prompt=(
+                "You are a course planning specialist. Create comprehensive curriculum plans "
+                "for English language training programs tailored to specific companies and industries. "
+                "Focus on practical, business-oriented content that addresses real workplace needs."
+            )
+        )
         
-        endpoint = endpoint_map.get(action)
-        if not endpoint:
-            raise ValueError(f"Unknown Content Creator action: {action}")
+        # Content Creator Agent
+        self.content_creator_agent = Agent(
+            'openai:gpt-4o',
+            deps_type=AgentDependencies,
+            output_type=Dict[str, Any],
+            system_prompt=(
+                "You are a content creation specialist. Generate high-quality educational content "
+                "including lessons, exercises, and assessments based on curriculum plans. "
+                "Ensure content is engaging, practical, and aligned with learning objectives."
+            )
+        )
         
-        return await self._make_agent_request("content_creator", endpoint, data)
+        # Quality Assurance Agent
+        self.quality_assurance_agent = Agent(
+            'openai:gpt-4o',
+            deps_type=AgentDependencies,
+            output_type=Dict[str, Any],
+            system_prompt=(
+                "You are a quality assurance specialist. Review educational content for accuracy, "
+                "effectiveness, and alignment with learning objectives. Provide detailed feedback "
+                "and quality scores with specific improvement recommendations."
+            )
+        )
+        
+        # Register tools for each agent
+        self._register_course_planner_tools()
+        self._register_content_creator_tools()
+        self._register_quality_assurance_tools()
     
-    async def call_quality_assurance(self, action: str, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Call the Quality Assurance Agent."""
+    def _register_course_planner_tools(self):
+        """Register tools for the course planner agent."""
         
-        endpoint_map = {
-            "review_content": "/review-content",
-            "improve_content": "/improve-content",
-            "batch_review": "/batch-review",
-            "get_capabilities": "/capabilities"
-        }
-        
-        endpoint = endpoint_map.get(action)
-        if not endpoint:
-            raise ValueError(f"Unknown Quality Assurance action: {action}")
-        
-        return await self._make_agent_request("quality_assurance", endpoint, data)
-    
-    async def _make_agent_request(
-        self, 
-        agent_name: str, 
-        endpoint: str, 
-        data: Optional[Dict[str, Any]] = None,
-        method: str = "POST"
-    ) -> Dict[str, Any]:
-        """Make an HTTP request to an agent."""
-        
-        agent_config = self.agent_endpoints.get(agent_name)
-        if not agent_config:
-            raise ValueError(f"Unknown agent: {agent_name}")
-        
-        url = f"{agent_config['base_url']}{endpoint}"
-        start_time = datetime.utcnow()
-        
-        # Track request
-        self.request_metrics["total_requests"] += 1
-        
-        for attempt in range(self.retry_attempts):
+        @self.course_planner_agent.tool
+        async def call_course_planner_api(ctx: RunContext[AgentDependencies], request: Dict[str, Any]) -> Dict[str, Any]:
+            """Call the course planner API directly."""
             try:
-                async with aiohttp.ClientSession(timeout=self.timeout) as session:
-                    # Prepare request
-                    kwargs = {
-                        "url": url,
-                        "headers": {"Content-Type": "application/json"}
-                    }
-                    
-                    if data and method.upper() in ["POST", "PUT", "PATCH"]:
-                        kwargs["json"] = data
-                    elif data and method.upper() == "GET":
-                        kwargs["params"] = data
-                    
-                    # Make request
-                    async with getattr(session, method.lower())(**kwargs) as response:
-                        response_data = await response.json()
-                        
-                        # Calculate response time
-                        response_time = (datetime.utcnow() - start_time).total_seconds()
-                        self._update_response_metrics(agent_name, response_time)
-                        
-                        if response.status == 200:
-                            self.request_metrics["successful_requests"] += 1
-                            logger.info(f"Agent {agent_name} request successful: {endpoint} ({response_time:.2f}s)")
-                            return response_data
-                        else:
-                            error_msg = response_data.get("error", f"HTTP {response.status}")
-                            logger.error(f"Agent {agent_name} request failed: {error_msg}")
-                            
-                            if attempt == self.retry_attempts - 1:
-                                self.request_metrics["failed_requests"] += 1
-                                return {
-                                    "success": False,
-                                    "error": error_msg,
-                                    "status_code": response.status
-                                }
-                            
-                            # Wait before retry
-                            await asyncio.sleep(self.retry_delay * (attempt + 1))
-                            
-            except asyncio.TimeoutError:
-                logger.error(f"Agent {agent_name} request timeout: {endpoint}")
-                if attempt == self.retry_attempts - 1:
-                    self.request_metrics["failed_requests"] += 1
-                    return {
-                        "success": False,
-                        "error": "Request timeout"
-                    }
-                await asyncio.sleep(self.retry_delay * (attempt + 1))
-                
-            except aiohttp.ClientError as e:
-                logger.error(f"Agent {agent_name} connection error: {e}")
-                if attempt == self.retry_attempts - 1:
-                    self.request_metrics["failed_requests"] += 1
-                    return {
-                        "success": False,
-                        "error": f"Connection error: {str(e)}"
-                    }
-                await asyncio.sleep(self.retry_delay * (attempt + 1))
-                
+                response = await ctx.deps.http_client.post(
+                    f"{ctx.deps.base_urls['course_planner']}/plan_course",
+                    json=request,
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                return response.json()
             except Exception as e:
-                logger.error(f"Agent {agent_name} unexpected error: {e}")
-                if attempt == self.retry_attempts - 1:
-                    self.request_metrics["failed_requests"] += 1
-                    return {
-                        "success": False,
-                        "error": f"Unexpected error: {str(e)}"
-                    }
-                await asyncio.sleep(self.retry_delay * (attempt + 1))
+                logger.error(f"Course planner API call failed: {e}")
+                return {"success": False, "error": str(e)}
         
-        # Should not reach here
-        return {
-            "success": False,
-            "error": "All retry attempts failed"
-        }
+        @self.course_planner_agent.tool
+        async def validate_planning_request(ctx: RunContext[AgentDependencies], request: Dict[str, Any]) -> Dict[str, Any]:
+            """Validate the planning request structure."""
+            try:
+                planning_request = PlanningRequest(**request)
+                return {"success": True, "validated_request": planning_request.dict()}
+            except Exception as e:
+                return {"success": False, "error": f"Validation failed: {e}"}
     
-    async def check_agent_health(self, agent_name: str) -> Dict[str, Any]:
-        """Check the health of a specific agent."""
+    def _register_content_creator_tools(self):
+        """Register tools for the content creator agent."""
         
-        agent_config = self.agent_endpoints.get(agent_name)
-        if not agent_config:
-            return {
-                "agent": agent_name,
-                "healthy": False,
-                "error": "Unknown agent"
-            }
+        @self.content_creator_agent.tool
+        async def call_content_creator_api(ctx: RunContext[AgentDependencies], request: Dict[str, Any]) -> Dict[str, Any]:
+            """Call the content creator API directly."""
+            try:
+                response = await ctx.deps.http_client.post(
+                    f"{ctx.deps.base_urls['content_creator']}/create_content",
+                    json=request,
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                logger.error(f"Content creator API call failed: {e}")
+                return {"success": False, "error": str(e)}
+        
+        @self.content_creator_agent.tool
+        async def validate_content_request(ctx: RunContext[AgentDependencies], request: Dict[str, Any]) -> Dict[str, Any]:
+            """Validate the content creation request structure."""
+            try:
+                content_request = ContentRequest(**request)
+                return {"success": True, "validated_request": content_request.dict()}
+            except Exception as e:
+                return {"success": False, "error": f"Validation failed: {e}"}
+    
+    def _register_quality_assurance_tools(self):
+        """Register tools for the quality assurance agent."""
+        
+        @self.quality_assurance_agent.tool
+        async def call_quality_assurance_api(ctx: RunContext[AgentDependencies], request: Dict[str, Any]) -> Dict[str, Any]:
+            """Call the quality assurance API directly."""
+            try:
+                response = await ctx.deps.http_client.post(
+                    f"{ctx.deps.base_urls['quality_assurance']}/review_content",
+                    json=request,
+                    headers={"Content-Type": "application/json"}
+                )
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                logger.error(f"Quality assurance API call failed: {e}")
+                return {"success": False, "error": str(e)}
+        
+        @self.quality_assurance_agent.tool
+        async def validate_quality_request(ctx: RunContext[AgentDependencies], request: Dict[str, Any]) -> Dict[str, Any]:
+            """Validate the quality assurance request structure."""
+            try:
+                quality_request = QualityRequest(**request)
+                return {"success": True, "validated_request": quality_request.dict()}
+            except Exception as e:
+                return {"success": False, "error": f"Validation failed: {e}"}
+    
+    async def call_course_planner(self, action: str, request: Dict[str, Any]) -> Dict[str, Any]:
+        """Call the course planner agent."""
         
         try:
-            result = await self._make_agent_request(
-                agent_name, 
-                agent_config["health_endpoint"], 
-                method="GET"
-            )
+            logger.info(f"Calling course planner agent for action: {action}")
             
-            return {
-                "agent": agent_name,
-                "healthy": result.get("status") == "healthy",
-                "response": result,
-                "checked_at": datetime.utcnow().isoformat()
-            }
+            # Prepare the prompt based on action
+            if action == "plan_course":
+                prompt = f"""
+                Create a comprehensive course plan for the following request:
+                
+                Company: {request.get('company_name')}
+                Industry: {request.get('industry')}
+                Training Goals: {request.get('training_goals')}
+                Current English Level: {request.get('current_english_level')}
+                Duration: {request.get('duration_weeks')} weeks
+                Target Audience: {request.get('target_audience')}
+                Specific Needs: {request.get('specific_needs', 'None specified')}
+                
+                Please create a detailed curriculum plan including:
+                1. Course overview and objectives
+                2. Module breakdown with learning outcomes
+                3. Assessment strategy
+                4. Vocabulary themes and grammar focus areas
+                5. Practical exercises and activities
+                """
+            else:
+                prompt = f"Execute action '{action}' with the provided request data."
             
-        except Exception as e:
-            return {
-                "agent": agent_name,
-                "healthy": False,
-                "error": str(e),
-                "checked_at": datetime.utcnow().isoformat()
-            }
-    
-    async def check_all_agents_health(self) -> Dict[str, Dict[str, Any]]:
-        """Check the health of all agents concurrently."""
-        
-        health_tasks = []
-        agent_names = list(self.agent_endpoints.keys())
-        
-        for agent_name in agent_names:
-            task = self.check_agent_health(agent_name)
-            health_tasks.append(task)
-        
-        # Execute health checks concurrently
-        health_results = await asyncio.gather(*health_tasks, return_exceptions=True)
-        
-        # Compile results
-        health_status = {}
-        for i, result in enumerate(health_results):
-            agent_name = agent_names[i]
+            # Call the Pydantic-AI agent
+            result = await self.course_planner_agent.run(prompt, deps=self.deps)
             
-            if isinstance(result, Exception):
-                health_status[agent_name] = {
-                    "agent": agent_name,
-                    "healthy": False,
-                    "error": str(result),
-                    "checked_at": datetime.utcnow().isoformat()
+            # Process the result
+            if result.output:
+                return {
+                    "success": True,
+                    "curriculum": result.output,
+                    "usage": result.usage().dict() if result.usage() else None
                 }
             else:
-                health_status[agent_name] = result
+                return {"success": False, "error": "No output from course planner agent"}
+                
+        except Exception as e:
+            logger.error(f"Course planner agent call failed: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def call_content_creator(self, action: str, request: Dict[str, Any]) -> Dict[str, Any]:
+        """Call the content creator agent."""
+        
+        try:
+            logger.info(f"Calling content creator agent for action: {action}")
+            
+            # Prepare the prompt based on action
+            if action == "create_content":
+                curriculum = request.get('curriculum', {})
+                prompt = f"""
+                Create educational content based on the following curriculum:
+                
+                Company: {request.get('company_name')}
+                Industry: {request.get('industry')}
+                English Level: {request.get('current_english_level')}
+                
+                Curriculum Overview:
+                {curriculum.get('title', 'No title')}
+                {curriculum.get('description', 'No description')}
+                
+                Modules: {len(curriculum.get('modules', []))}
+                
+                Please create:
+                1. Detailed lesson content for each module
+                2. Interactive exercises and activities
+                3. Assessment materials
+                4. Supplementary resources
+                
+                Ensure content is engaging, practical, and aligned with the curriculum objectives.
+                """
+            elif action == "improve_content":
+                prompt = f"""
+                Improve the following content based on the quality assurance report:
+                
+                Content to improve: {request.get('content', {})}
+                QA Report: {request.get('qa_report', {})}
+                
+                Address the issues identified in the QA report and enhance the content quality.
+                """
+            else:
+                prompt = f"Execute action '{action}' with the provided request data."
+            
+            # Call the Pydantic-AI agent
+            result = await self.content_creator_agent.run(prompt, deps=self.deps)
+            
+            # Process the result
+            if result.output:
+                return {
+                    "success": True,
+                    "content": result.output,
+                    "usage": result.usage().dict() if result.usage() else None
+                }
+            else:
+                return {"success": False, "error": "No output from content creator agent"}
+                
+        except Exception as e:
+            logger.error(f"Content creator agent call failed: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def call_quality_assurance(self, action: str, request: Dict[str, Any]) -> Dict[str, Any]:
+        """Call the quality assurance agent."""
+        
+        try:
+            logger.info(f"Calling quality assurance agent for action: {action}")
+            
+            # Prepare the prompt based on action
+            if action == "review_content":
+                content = request.get('content', {})
+                prompt = f"""
+                Review the following educational content for quality and effectiveness:
+                
+                Company: {request.get('company_name')}
+                Industry: {request.get('industry')}
+                Target English Level: {request.get('current_english_level')}
+                
+                Content to review:
+                {content}
+                
+                Please provide a comprehensive quality assessment including:
+                1. Overall quality score (0-100)
+                2. Linguistic accuracy assessment
+                3. Pedagogical effectiveness evaluation
+                4. CEFR level alignment check
+                5. Cultural sensitivity review
+                6. Specific issues and recommendations
+                7. Approval status for release
+                """
+            else:
+                prompt = f"Execute action '{action}' with the provided request data."
+            
+            # Call the Pydantic-AI agent
+            result = await self.quality_assurance_agent.run(prompt, deps=self.deps)
+            
+            # Process the result
+            if result.output:
+                return {
+                    "success": True,
+                    "qa_report": result.output,
+                    "usage": result.usage().dict() if result.usage() else None
+                }
+            else:
+                return {"success": False, "error": "No output from quality assurance agent"}
+                
+        except Exception as e:
+            logger.error(f"Quality assurance agent call failed: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def check_all_agents_health(self) -> Dict[str, Dict[str, Any]]:
+        """Check the health status of all agents."""
+        
+        health_status = {}
+        
+        for agent_name, base_url in self.base_urls.items():
+            try:
+                response = await self.http_client.get(f"{base_url}/health", timeout=5.0)
+                health_status[agent_name] = {
+                    "healthy": response.status_code == 200,
+                    "status_code": response.status_code,
+                    "response_time": response.elapsed.total_seconds(),
+                    "last_check": datetime.utcnow().isoformat()
+                }
+            except Exception as e:
+                health_status[agent_name] = {
+                    "healthy": False,
+                    "error": str(e),
+                    "last_check": datetime.utcnow().isoformat()
+                }
         
         return health_status
     
-    async def get_agent_capabilities(self, agent_name: str) -> Dict[str, Any]:
-        """Get capabilities of a specific agent."""
-        
-        agent_config = self.agent_endpoints.get(agent_name)
-        if not agent_config:
-            return {
-                "error": f"Unknown agent: {agent_name}"
-            }
-        
-        try:
-            result = await self._make_agent_request(
-                agent_name,
-                agent_config["capabilities_endpoint"],
-                method="GET"
-            )
-            
-            return result
-            
-        except Exception as e:
-            return {
-                "error": f"Failed to get capabilities for {agent_name}: {str(e)}"
-            }
+    async def close(self):
+        """Close the HTTP client."""
+        await self.http_client.aclose()
     
-    async def get_all_agent_capabilities(self) -> Dict[str, Dict[str, Any]]:
-        """Get capabilities of all agents."""
-        
-        capabilities_tasks = []
-        agent_names = list(self.agent_endpoints.keys())
-        
-        for agent_name in agent_names:
-            task = self.get_agent_capabilities(agent_name)
-            capabilities_tasks.append(task)
-        
-        # Execute capability requests concurrently
-        capability_results = await asyncio.gather(*capabilities_tasks, return_exceptions=True)
-        
-        # Compile results
-        all_capabilities = {}
-        for i, result in enumerate(capability_results):
-            agent_name = agent_names[i]
-            
-            if isinstance(result, Exception):
-                all_capabilities[agent_name] = {
-                    "error": str(result)
-                }
-            else:
-                all_capabilities[agent_name] = result
-        
-        return all_capabilities
+    async def __aenter__(self):
+        """Async context manager entry."""
+        return self
     
-    def _update_response_metrics(self, agent_name: str, response_time: float):
-        """Update response time metrics."""
-        
-        # Update overall average
-        total_requests = self.request_metrics["total_requests"]
-        current_avg = self.request_metrics["average_response_time"]
-        new_avg = ((current_avg * (total_requests - 1)) + response_time) / total_requests
-        self.request_metrics["average_response_time"] = new_avg
-        
-        # Update agent-specific metrics
-        if agent_name not in self.request_metrics["agent_response_times"]:
-            self.request_metrics["agent_response_times"][agent_name] = {
-                "total_requests": 0,
-                "average_response_time": 0.0,
-                "min_response_time": response_time,
-                "max_response_time": response_time
-            }
-        
-        agent_metrics = self.request_metrics["agent_response_times"][agent_name]
-        agent_requests = agent_metrics["total_requests"]
-        agent_avg = agent_metrics["average_response_time"]
-        
-        # Update agent average
-        new_agent_avg = ((agent_avg * agent_requests) + response_time) / (agent_requests + 1)
-        agent_metrics["average_response_time"] = new_agent_avg
-        agent_metrics["total_requests"] += 1
-        
-        # Update min/max
-        agent_metrics["min_response_time"] = min(agent_metrics["min_response_time"], response_time)
-        agent_metrics["max_response_time"] = max(agent_metrics["max_response_time"], response_time)
-    
-    def get_client_metrics(self) -> Dict[str, Any]:
-        """Get client performance metrics."""
-        
-        return {
-            "request_metrics": self.request_metrics,
-            "agent_endpoints": {
-                name: config["base_url"] 
-                for name, config in self.agent_endpoints.items()
-            },
-            "configuration": {
-                "timeout_seconds": self.timeout.total,
-                "retry_attempts": self.retry_attempts,
-                "retry_delay": self.retry_delay
-            },
-            "timestamp": datetime.utcnow().isoformat()
-        }
-    
-    async def test_all_agents(self) -> Dict[str, Any]:
-        """Test basic functionality of all agents."""
-        
-        test_results = {}
-        
-        # Test Course Planner
-        try:
-            cp_result = await self.call_course_planner("get_capabilities", {})
-            test_results["course_planner"] = {
-                "test": "get_capabilities",
-                "success": cp_result.get("agent_name") == "Course Planning Specialist",
-                "response": cp_result
-            }
-        except Exception as e:
-            test_results["course_planner"] = {
-                "test": "get_capabilities",
-                "success": False,
-                "error": str(e)
-            }
-        
-        # Test Content Creator
-        try:
-            cc_result = await self.call_content_creator("get_capabilities", {})
-            test_results["content_creator"] = {
-                "test": "get_capabilities", 
-                "success": cc_result.get("agent_name") == "Content Creator Agent",
-                "response": cc_result
-            }
-        except Exception as e:
-            test_results["content_creator"] = {
-                "test": "get_capabilities",
-                "success": False,
-                "error": str(e)
-            }
-        
-        # Test Quality Assurance
-        try:
-            qa_result = await self.call_quality_assurance("get_capabilities", {})
-            test_results["quality_assurance"] = {
-                "test": "get_capabilities",
-                "success": qa_result.get("agent_name") == "Quality Assurance Agent",
-                "response": qa_result
-            }
-        except Exception as e:
-            test_results["quality_assurance"] = {
-                "test": "get_capabilities",
-                "success": False,
-                "error": str(e)
-            }
-        
-        # Overall test status
-        all_success = all(result.get("success", False) for result in test_results.values())
-        
-        return {
-            "overall_success": all_success,
-            "tests_run": len(test_results),
-            "tests_passed": sum(1 for result in test_results.values() if result.get("success", False)),
-            "agent_tests": test_results,
-            "tested_at": datetime.utcnow().isoformat()
-        }
-    
-    async def ping_all_agents(self) -> Dict[str, Any]:
-        """Quick ping test for all agents."""
-        
-        ping_results = {}
-        
-        for agent_name in self.agent_endpoints.keys():
-            start_time = datetime.utcnow()
-            
-            try:
-                health_result = await self.check_agent_health(agent_name)
-                response_time = (datetime.utcnow() - start_time).total_seconds()
-                
-                ping_results[agent_name] = {
-                    "reachable": health_result.get("healthy", False),
-                    "response_time_ms": round(response_time * 1000, 2),
-                    "status": "online" if health_result.get("healthy", False) else "offline"
-                }
-                
-            except Exception as e:
-                response_time = (datetime.utcnow() - start_time).total_seconds()
-                ping_results[agent_name] = {
-                    "reachable": False,
-                    "response_time_ms": round(response_time * 1000, 2),
-                    "status": "error",
-                    "error": str(e)
-                }
-        
-        return {
-            "ping_results": ping_results,
-            "all_agents_reachable": all(result.get("reachable", False) for result in ping_results.values()),
-            "pinged_at": datetime.utcnow().isoformat()
-        }
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Async context manager exit."""
+        await self.close()

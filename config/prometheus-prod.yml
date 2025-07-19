@@ -1,0 +1,28 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+auth:
+  basic_auth_users:
+    # Define production Prometheus credentials via environment variables
+    # PROMETHEUS_PROD_USER / PROMETHEUS_PROD_PASSWORD
+
+scrape_configs:
+  - job_name: "api-server"
+    metrics_path: "/metrics"
+    scheme: "http"
+    static_configs:
+      - targets: ["api:8000"]
+
+  - job_name: "redis"
+    static_configs:
+      - targets: ["redis:9121"]
+
+  - job_name: "postgres"
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"] 

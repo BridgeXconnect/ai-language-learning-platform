@@ -4,6 +4,7 @@ from fastapi.responses import Response
 from app.core.config import settings
 from app.core.database import engine, Base
 from app.routes import auth_routes, course_routes, sales_routes, ai_routes, agent_routes, sop_routes, health_routes
+from app.domains.ai.routes_cache import router as ai_cache_router
 
 # Import all models to ensure they're registered with SQLAlchemy
 from app.models import user, sales
@@ -38,6 +39,14 @@ async def startup_event():
     print(f"🔗 API Base URL: {settings.API_BASE_URL if hasattr(settings, 'API_BASE_URL') else 'Not configured'}")
     print("✅ CORS middleware configured for all origins, methods, and headers")
     print("🚀 Server starting up - health check available at /health")
+    
+    # Initialize Redis cache
+    from app.services.redis_cache_service import redis_cache
+    if redis_cache.is_available():
+        print("🚀 Redis cache initialized successfully - AI performance boost enabled!")
+        print("📊 Cache monitoring available at /ai/cache/status")
+    else:
+        print("⚠️  Redis cache not available - AI operations will run without caching")
 
 # Include routers
 app.include_router(health_routes.router)  # Add health check first
@@ -45,6 +54,7 @@ app.include_router(auth_routes.router)
 app.include_router(course_routes.router)
 app.include_router(sales_routes.router)
 app.include_router(ai_routes.router)
+app.include_router(ai_cache_router)  # Add Redis cache routes
 app.include_router(agent_routes.router)
 app.include_router(sop_routes.router)
 

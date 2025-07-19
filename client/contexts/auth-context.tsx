@@ -83,12 +83,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log('🔍 Initializing authentication...');
       }
 
-      // Check backend connectivity first
-      const isHealthy = await healthService.checkHealth();
+      // Check backend connectivity with fallback validation
+      const isHealthy = await healthService.validateConnectivity();
       if (!isHealthy) {
-        setInitializationError('Backend service is not available');
+        const healthDetails = await healthService.getHealthDetails();
+        setInitializationError(
+          `Backend service is not available at ${healthDetails.url}. Please ensure the backend server is running.`
+        );
         if (shouldEnableDebugLogs) {
-          console.warn('⚠️ Backend health check failed during auth initialization');
+          console.warn('⚠️ Backend connectivity validation failed:', healthDetails);
         }
         return;
       }

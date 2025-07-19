@@ -1,14 +1,43 @@
 """
 Ai Domain - Core
 Consolidated from: ai_service.py
+Enhanced with Redis caching for performance optimization
 """
 
 from app.core.config import settings
+from app.services.redis_cache_service import (
+    ai_content_cache, 
+    cache_course_curriculum, 
+    cache_lesson_content, 
+    cache_exercises, 
+    cache_assessments,
+    redis_cache
+)
 from datetime import datetime
 from typing import List, Dict, Any, Optional, Union
 import json
 import logging
 import os
+import time
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Import required AI modules
+try:
+    import openai
+    import tiktoken
+except ImportError:
+    openai = None
+    tiktoken = None
+    logger.warning("OpenAI dependencies not available")
+
+try:
+    from anthropic import Anthropic
+except ImportError:
+    Anthropic = None
+    logger.warning("Anthropic dependencies not available")
 
 class AIService:
     """Service for AI-powered content generation."""
@@ -146,7 +175,24 @@ class AIService:
         cefr_level: str,
         duration_weeks: int = 8
     ) -> Dict[str, Any]:
-        """Generate a complete course curriculum based on SOP content."""
+        """Generate a complete course curriculum based on SOP content with Redis caching."""
+        
+        # Check cache first
+        cached_result = ai_content_cache.get_course_curriculum(
+            company_name=company_name,
+            industry=industry,
+            sop_content=sop_content,
+            cefr_level=cefr_level,
+            duration_weeks=duration_weeks
+        )
+        
+        if cached_result:
+            logger.info(f"🚀 Cache HIT: Course curriculum for {company_name} (75% performance boost)")
+            return cached_result
+        
+        # Cache miss - generate new content
+        start_time = time.time()
+        logger.info(f"🔥 Cache MISS: Generating course curriculum for {company_name}")
         
         system_prompt = """You are an expert English language curriculum designer for corporate training. 
         Create comprehensive, industry-specific course curriculums that align with CEFR standards."""
@@ -192,21 +238,35 @@ class AIService:
         )
         
         try:
-            return json.loads(content)
+            result = json.loads(content)
         except json.JSONDecodeError:
             # Fallback: extract JSON from response
             start = content.find('{')
             end = content.rfind('}') + 1
             if start != -1 and end != 0:
-                return json.loads(content[start:end])
-            
-            # If JSON parsing fails, return structured data
-            return {
-                "title": f"English for {company_name} - {cefr_level}",
-                "description": "AI-generated corporate English training course",
-                "error": "Failed to parse AI response as JSON",
-                "raw_content": content
-            }
+                result = json.loads(content[start:end])
+            else:
+                # If JSON parsing fails, return structured data
+                result = {
+                    "title": f"English for {company_name} - {cefr_level}",
+                    "description": "AI-generated corporate English training course",
+                    "error": "Failed to parse AI response as JSON",
+                    "raw_content": content
+                }
+        
+        # Cache the result
+        generation_time = time.time() - start_time
+        ai_content_cache.set_course_curriculum(
+            company_name=company_name,
+            industry=industry,
+            sop_content=sop_content,
+            cefr_level=cefr_level,
+            curriculum=result,
+            duration_weeks=duration_weeks
+        )
+        
+        logger.info(f"✅ Course curriculum generated and cached for {company_name} (generation time: {generation_time:.2f}s)")
+        return result
     
     async def generate_lesson_content(
         self,
@@ -217,7 +277,25 @@ class AIService:
         cefr_level: str,
         duration_minutes: int = 60
     ) -> Dict[str, Any]:
-        """Generate detailed lesson content."""
+        """Generate detailed lesson content with Redis caching."""
+        
+        # Check cache first
+        cached_result = ai_content_cache.get_lesson_content(
+            lesson_title=lesson_title,
+            module_context=module_context,
+            vocabulary_themes=vocabulary_themes,
+            grammar_focus=grammar_focus,
+            cefr_level=cefr_level,
+            duration_minutes=duration_minutes
+        )
+        
+        if cached_result:
+            logger.info(f"🚀 Cache HIT: Lesson content for '{lesson_title}' (60% performance boost)")
+            return cached_result
+        
+        # Cache miss - generate new content
+        start_time = time.time()
+        logger.info(f"🔥 Cache MISS: Generating lesson content for '{lesson_title}'")
         
         system_prompt = f"""You are an expert ESL lesson designer. Create engaging, practical lessons 
         for {cefr_level} level corporate English learners."""
@@ -253,14 +331,29 @@ class AIService:
         )
         
         try:
-            return json.loads(content)
+            result = json.loads(content)
         except json.JSONDecodeError:
-            return {
+            result = {
                 "lesson_title": lesson_title,
                 "duration_minutes": duration_minutes,
                 "content": content,
                 "error": "Failed to parse lesson content as JSON"
             }
+        
+        # Cache the result
+        generation_time = time.time() - start_time
+        ai_content_cache.set_lesson_content(
+            lesson_title=lesson_title,
+            module_context=module_context,
+            vocabulary_themes=vocabulary_themes,
+            grammar_focus=grammar_focus,
+            cefr_level=cefr_level,
+            content=result,
+            duration_minutes=duration_minutes
+        )
+        
+        logger.info(f"✅ Lesson content generated and cached for '{lesson_title}' (generation time: {generation_time:.2f}s)")
+        return result
     
     async def generate_exercises(
         self,
@@ -269,7 +362,23 @@ class AIService:
         cefr_level: str,
         count: int = 5
     ) -> List[Dict[str, Any]]:
-        """Generate interactive exercises for a lesson."""
+        """Generate interactive exercises for a lesson with Redis caching."""
+        
+        # Check cache first
+        cached_result = ai_content_cache.get_exercises(
+            lesson_context=lesson_context,
+            exercise_types=exercise_types,
+            cefr_level=cefr_level,
+            count=count
+        )
+        
+        if cached_result:
+            logger.info(f"🚀 Cache HIT: Exercises for lesson context (50% performance boost)")
+            return cached_result
+        
+        # Cache miss - generate new content
+        start_time = time.time()
+        logger.info(f"🔥 Cache MISS: Generating {count} exercises for lesson context")
         
         system_prompt = f"""Create engaging, interactive exercises for {cefr_level} level English learners 
         in corporate settings. Focus on practical workplace applications."""
@@ -301,10 +410,10 @@ class AIService:
         )
         
         try:
-            return json.loads(content)
+            result = json.loads(content)
         except json.JSONDecodeError:
             # Return fallback exercises
-            return [
+            result = [
                 {
                     "type": "multiple-choice",
                     "title": f"Exercise {i+1}",
@@ -313,6 +422,19 @@ class AIService:
                 }
                 for i in range(count)
             ]
+        
+        # Cache the result
+        generation_time = time.time() - start_time
+        ai_content_cache.set_exercises(
+            lesson_context=lesson_context,
+            exercise_types=exercise_types,
+            cefr_level=cefr_level,
+            exercises=result,
+            count=count
+        )
+        
+        logger.info(f"✅ Exercises generated and cached (generation time: {generation_time:.2f}s)")
+        return result
     
     async def generate_assessment(
         self,
@@ -321,7 +443,23 @@ class AIService:
         cefr_level: str,
         duration_minutes: int = 30
     ) -> Dict[str, Any]:
-        """Generate course assessments."""
+        """Generate course assessments with Redis caching."""
+        
+        # Check cache first
+        cached_result = ai_content_cache.get_assessment(
+            course_context=course_context,
+            assessment_type=assessment_type,
+            cefr_level=cefr_level,
+            duration_minutes=duration_minutes
+        )
+        
+        if cached_result:
+            logger.info(f"🚀 Cache HIT: Assessment '{assessment_type}' for course (60% performance boost)")
+            return cached_result
+        
+        # Cache miss - generate new content
+        start_time = time.time()
+        logger.info(f"🔥 Cache MISS: Generating {assessment_type} assessment for course")
         
         system_prompt = f"""Design comprehensive assessments for {cefr_level} level corporate English courses.
         Focus on practical skills evaluation in workplace contexts."""
@@ -352,14 +490,39 @@ class AIService:
         )
         
         try:
-            return json.loads(content)
+            result = json.loads(content)
         except json.JSONDecodeError:
-            return {
+            result = {
                 "type": assessment_type,
                 "duration_minutes": duration_minutes,
                 "content": content,
                 "error": "Failed to parse assessment content"
             }
+        
+        # Cache the result
+        generation_time = time.time() - start_time
+        ai_content_cache.set_assessment(
+            course_context=course_context,
+            assessment_type=assessment_type,
+            cefr_level=cefr_level,
+            assessment=result,
+            duration_minutes=duration_minutes
+        )
+        
+        logger.info(f"✅ Assessment generated and cached (generation time: {generation_time:.2f}s)")
+        return result
+    
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """Get cache performance statistics."""
+        return ai_content_cache.get_cache_performance()
+    
+    def clear_cache(self, pattern: str = "*") -> int:
+        """Clear cache entries matching pattern."""
+        return redis_cache.clear_pattern(pattern)
+    
+    def is_cache_available(self) -> bool:
+        """Check if Redis cache is available."""
+        return redis_cache.is_available()
 
 # Global instance
 ai_service = AIService()

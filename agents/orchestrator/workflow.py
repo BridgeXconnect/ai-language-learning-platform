@@ -1,13 +1,18 @@
 """
-LangGraph-style workflow implementation for multi-agent course generation
+LangGraph-based workflow implementation for multi-agent course generation
 Manages the sequential execution of Course Planner → Content Creator → Quality Assurance
 """
 
 import logging
-from typing import Dict, Any, List, Optional, TypedDict
+from typing import Dict, Any, List, Optional, TypedDict, Annotated
 from datetime import datetime
 from enum import Enum
 import asyncio
+import operator
+
+from langgraph.graph import StateGraph, START, END
+from langgraph.types import Command
+from langchain_core.messages import HumanMessage, AIMessage
 
 from agent_client import AgentClient
 
@@ -21,9 +26,10 @@ class WorkflowState(TypedDict):
     content_result: Optional[Dict[str, Any]]
     quality_result: Optional[Dict[str, Any]]
     current_stage: str
-    errors: List[Dict[str, Any]]
+    errors: Annotated[List[Dict[str, Any]], operator.add]
     retry_count: int
     start_time: str
+    messages: Annotated[List[Any], operator.add]
 
 class WorkflowStage(str, Enum):
     """Workflow stage enumeration."""
@@ -37,7 +43,7 @@ class WorkflowStage(str, Enum):
     FAILED = "failed"
 
 class CourseGenerationWorkflow:
-    """LangGraph-style workflow for course generation."""
+    """LangGraph-based workflow for course generation."""
     
     def __init__(self):
         self.agent_client = AgentClient()
@@ -51,6 +57,53 @@ class CourseGenerationWorkflow:
             "planning_threshold": 75,
             "timeout_seconds": 300  # 5 minutes
         }
+        
+        # Build the workflow graph
+        self.graph = self._build_workflow_graph()
+    
+    def _build_workflow_graph(self) -> StateGraph:
+        """Build the LangGraph workflow."""
+        
+        # Create the state graph
+        workflow = StateGraph(WorkflowState)
+        
+        # Add nodes
+        workflow.add_node("init", self._init_node)
+        workflow.add_node("planning", self._planning_node)
+        workflow.add_node("content_creation", self._content_creation_node)
+        workflow.add_node("quality_review", self._quality_review_node)
+        workflow.add_node("improvement", self._improvement_node)
+        workflow.add_node("finalization", self._finalization_node)
+        
+        # Set entry point
+        workflow.set_entry_point("init")
+        
+        # Add edges
+        workflow.add_edge("init", "planning")
+        workflow.add_conditional_edges(
+            "planning",
+            self._route_after_planning,
+            {
+                "continue": "content_creation",
+                "retry": "planning",
+                "fail": END
+            }
+        )
+        workflow.add_edge("content_creation", "quality_review")
+        workflow.add_conditional_edges(
+            "quality_review",
+            self._route_after_quality_review,
+            {
+                "continue": "finalization",
+                "improve": "improvement",
+                "retry": "content_creation",
+                "fail": END
+            }
+        )
+        workflow.add_edge("improvement", "quality_review")
+        workflow.add_edge("finalization", END)
+        
+        return workflow.compile()
     
     async def execute_complete_workflow(self, request) -> Dict[str, Any]:
         """Execute the complete course generation workflow."""
@@ -67,7 +120,8 @@ class CourseGenerationWorkflow:
             current_stage=WorkflowStage.INIT,
             errors=[],
             retry_count=0,
-            start_time=datetime.utcnow().isoformat()
+            start_time=datetime.utcnow().isoformat(),
+            messages=[]
         )
         
         self.workflow_history[workflow_id] = []
@@ -75,8 +129,8 @@ class CourseGenerationWorkflow:
         try:
             logger.info(f"Starting workflow {workflow_id} for {request.company_name}")
             
-            # Execute workflow graph
-            final_state = await self._execute_workflow_graph(state)
+            # Execute workflow using LangGraph
+            final_state = await self.graph.ainvoke(state)
             
             # Return final result
             return self._compile_workflow_result(final_state)
@@ -90,53 +144,6 @@ class CourseGenerationWorkflow:
                 "timestamp": datetime.utcnow().isoformat()
             })
             return self._compile_workflow_result(state)
-    
-    async def _execute_workflow_graph(self, state: WorkflowState) -> WorkflowState:
-        """Execute the workflow graph with conditional routing."""
-        
-        # Define workflow graph
-        graph = {
-            WorkflowStage.INIT: self._init_node,
-            WorkflowStage.PLANNING: self._planning_node,
-            WorkflowStage.CONTENT_CREATION: self._content_creation_node,
-            WorkflowStage.QUALITY_REVIEW: self._quality_review_node,
-            WorkflowStage.IMPROVEMENT: self._improvement_node,
-            WorkflowStage.FINALIZATION: self._finalization_node
-        }
-        
-        current_stage = WorkflowStage.INIT
-        
-        while current_stage not in [WorkflowStage.COMPLETED, WorkflowStage.FAILED]:
-            try:
-                state["current_stage"] = current_stage
-                self._log_stage_entry(state, current_stage)
-                
-                # Execute current node
-                node_func = graph.get(current_stage)
-                if not node_func:
-                    raise Exception(f"Unknown workflow stage: {current_stage}")
-                
-                state = await node_func(state)
-                
-                # Determine next stage
-                current_stage = self._route_next_stage(state, current_stage)
-                
-                self._log_stage_completion(state, current_stage)
-                
-            except Exception as e:
-                logger.error(f"Stage {current_stage} failed: {e}")
-                state = await self._handle_stage_error(state, current_stage, str(e))
-                
-                # Check if we should retry or fail
-                if state["retry_count"] >= self.config["max_retries"]:
-                    current_stage = WorkflowStage.FAILED
-                else:
-                    # Retry current stage
-                    await asyncio.sleep(self.config["retry_delay"])
-                    state["retry_count"] += 1
-        
-        state["current_stage"] = current_stage
-        return state
     
     async def _init_node(self, state: WorkflowState) -> WorkflowState:
         """Initialize the workflow."""
@@ -203,128 +210,49 @@ class CourseGenerationWorkflow:
         
         logger.info("Executing content creation stage")
         
-        course_request = state["course_request"]
         planning_result = state["planning_result"]
+        course_request = state["course_request"]
         
-        if not planning_result:
-            raise Exception("No planning result available for content creation")
-        
-        # Create content for each module
-        lessons = []
-        exercises = []
-        assessments = []
-        
-        modules = planning_result.get("modules", [])
-        
-        for i, module in enumerate(modules):
-            try:
-                logger.info(f"Creating content for module {i+1}/{len(modules)}: {module.get('title', 'Unnamed')}")
-                
-                # Create lesson content
-                lesson_request = {
-                    "course_id": course_request["course_request_id"],
-                    "lesson_title": module.get("title", f"Module {i+1} Lesson"),
-                    "module_context": module.get("description", ""),
-                    "vocabulary_themes": module.get("vocabulary_themes", []),
-                    "grammar_focus": module.get("grammar_focus", []),
-                    "cefr_level": course_request["current_english_level"],
-                    "duration_minutes": module.get("duration_hours", 4) * 60,
-                    "company_context": {
-                        "company_name": course_request["company_name"],
-                        "industry": course_request["industry"]
-                    }
-                }
-                
-                lesson_result = await self.agent_client.call_content_creator("create_lesson_content", lesson_request)
-                
-                if lesson_result.get("success", False):
-                    lessons.append(lesson_result["content"])
-                    
-                    # Create exercises for this lesson
-                    exercise_request = {
-                        "lesson_context": lesson_result["content"],
-                        "exercise_types": ["multiple-choice", "fill-in-blank", "role-play", "writing-task"],
-                        "exercise_count": 4,
-                        "cefr_level": course_request["current_english_level"]
-                    }
-                    
-                    exercise_result = await self.agent_client.call_content_creator("create_exercises", exercise_request)
-                    
-                    if exercise_result.get("success", False):
-                        exercises.extend(exercise_result["content"]["exercises"])
-                    
-            except Exception as e:
-                logger.warning(f"Content creation failed for module {i+1}: {e}")
-                # Continue with other modules
-        
-        # Create course assessment
-        try:
-            assessment_request = {
-                "course_context": {
-                    "curriculum": planning_result,
-                    "lessons": lessons,
-                    "cefr_level": course_request["current_english_level"]
-                },
-                "assessment_type": "final",
-                "duration_minutes": 60
-            }
-            
-            assessment_result = await self.agent_client.call_content_creator("create_assessment", assessment_request)
-            
-            if assessment_result.get("success", False):
-                assessments.append(assessment_result["content"])
-                
-        except Exception as e:
-            logger.warning(f"Assessment creation failed: {e}")
-        
-        # Compile content package
-        content_package = {
+        # Prepare content creation request
+        content_request = {
+            "course_request_id": course_request["course_request_id"],
             "curriculum": planning_result,
-            "lessons": lessons,
-            "exercises": exercises,
-            "assessments": assessments,
-            "metadata": {
-                "created_at": datetime.utcnow().isoformat(),
-                "course_request_id": course_request["course_request_id"],
-                "content_stats": {
-                    "total_lessons": len(lessons),
-                    "total_exercises": len(exercises),
-                    "total_assessments": len(assessments)
-                }
-            }
+            "company_name": course_request["company_name"],
+            "industry": course_request["industry"],
+            "current_english_level": course_request["current_english_level"]
         }
         
-        # Validate content creation
-        if len(lessons) == 0:
-            raise Exception("No lessons were successfully created")
+        # Call content creator agent
+        result = await self.agent_client.call_content_creator("create_content", content_request)
         
-        state["content_result"] = content_package
-        logger.info(f"Content creation completed: {len(lessons)} lessons, {len(exercises)} exercises, {len(assessments)} assessments")
+        if not result.get("success", False):
+            raise Exception(f"Content creation failed: {result.get('error', 'Unknown error')}")
+        
+        # Validate content result
+        content_result = result["content"]
+        if not self._validate_content_result(content_result):
+            raise Exception("Content creation produced invalid result")
+        
+        state["content_result"] = content_result
+        logger.info("Content creation completed successfully")
         
         return state
     
     async def _quality_review_node(self, state: WorkflowState) -> WorkflowState:
-        """Execute quality review stage."""
+        """Execute quality assurance stage."""
         
-        logger.info("Executing quality review stage")
+        logger.info("Executing quality assurance stage")
         
         content_result = state["content_result"]
         course_request = state["course_request"]
         
-        if not content_result:
-            raise Exception("No content result available for quality review")
-        
         # Prepare QA request
         qa_request = {
-            "content_id": f"course_{course_request['course_request_id']}",
-            "content_type": "course",
-            "content_data": content_result,
-            "target_cefr_level": course_request["current_english_level"],
-            "review_criteria": ["linguistic_accuracy", "cefr_alignment", "pedagogical_effectiveness", "cultural_sensitivity"],
-            "company_context": {
-                "company_name": course_request["company_name"],
-                "industry": course_request["industry"]
-            }
+            "course_request_id": course_request["course_request_id"],
+            "content": content_result,
+            "company_name": course_request["company_name"],
+            "industry": course_request["industry"],
+            "current_english_level": course_request["current_english_level"]
         }
         
         # Call quality assurance agent
@@ -333,11 +261,15 @@ class CourseGenerationWorkflow:
         if not result.get("success", False):
             raise Exception(f"Quality review failed: {result.get('error', 'Unknown error')}")
         
-        qa_result = result["result"]
-        overall_score = qa_result.get("overall_score", 0)
+        # Validate QA result
+        qa_result = result["qa_report"]
+        quality_score = qa_result.get("overall_score", 0)
+        
+        if quality_score < self.config["quality_threshold"]:
+            logger.warning(f"Quality score {quality_score}% below threshold {self.config['quality_threshold']}%")
         
         state["quality_result"] = qa_result
-        logger.info(f"Quality review completed with score: {overall_score}%")
+        logger.info(f"Quality review completed with score: {quality_score}%")
         
         return state
     
@@ -347,155 +279,138 @@ class CourseGenerationWorkflow:
         logger.info("Executing content improvement stage")
         
         content_result = state["content_result"]
-        quality_result = state["quality_result"]
+        qa_result = state["quality_result"]
+        course_request = state["course_request"]
         
-        if not content_result or not quality_result:
-            raise Exception("Missing content or quality result for improvement")
-        
-        issues = quality_result.get("issues_found", [])
-        critical_issues = [issue for issue in issues if issue.get("severity") in ["critical", "major"]]
-        
-        if not critical_issues:
-            logger.info("No critical issues found, skipping improvement")
-            return state
-        
-        # Attempt content improvement
+        # Prepare improvement request
         improvement_request = {
+            "course_request_id": course_request["course_request_id"],
             "content": content_result,
-            "quality_issues": critical_issues
+            "qa_report": qa_result,
+            "company_name": course_request["company_name"],
+            "industry": course_request["industry"]
         }
         
-        try:
-            result = await self.agent_client.call_quality_assurance("improve_content", improvement_request)
-            
-            if result.get("success", False):
-                improved_content = result["result"]["improved_content"]
-                state["content_result"] = improved_content
-                
-                # Re-run quality check on improved content
-                qa_request = {
-                    "content_id": f"course_{state['course_request']['course_request_id']}_improved",
-                    "content_type": "course",
-                    "content_data": improved_content,
-                    "target_cefr_level": state["course_request"]["current_english_level"],
-                    "review_criteria": ["linguistic_accuracy", "cefr_alignment", "pedagogical_effectiveness", "cultural_sensitivity"]
-                }
-                
-                qa_result = await self.agent_client.call_quality_assurance("review_content", qa_request)
-                
-                if qa_result.get("success", False):
-                    state["quality_result"] = qa_result["result"]
-                    logger.info(f"Content improved and re-reviewed: {qa_result['result'].get('overall_score', 0)}%")
-                
-        except Exception as e:
-            logger.warning(f"Content improvement failed: {e}")
-            # Continue with original content
+        # Call content creator for improvements
+        result = await self.agent_client.call_content_creator("improve_content", improvement_request)
+        
+        if not result.get("success", False):
+            raise Exception(f"Content improvement failed: {result.get('error', 'Unknown error')}")
+        
+        # Update content result
+        improved_content = result["improved_content"]
+        state["content_result"] = improved_content
+        logger.info("Content improvement completed")
         
         return state
     
     async def _finalization_node(self, state: WorkflowState) -> WorkflowState:
-        """Finalize the workflow."""
+        """Execute finalization stage."""
         
-        logger.info("Finalizing workflow")
+        logger.info("Executing finalization stage")
         
-        # Final validation
-        if not state["planning_result"]:
-            raise Exception("Missing planning result in finalization")
+        # Compile final course
+        final_course = self._compile_final_course(state)
+        state["final_course"] = final_course
+        state["current_stage"] = WorkflowStage.COMPLETED
         
-        if not state["content_result"]:
-            raise Exception("Missing content result in finalization")
+        logger.info("Workflow finalization completed")
         
-        if not state["quality_result"]:
-            raise Exception("Missing quality result in finalization")
-        
-        # Check final quality score
-        overall_score = state["quality_result"].get("overall_score", 0)
-        approved = state["quality_result"].get("approved_for_release", False)
-        
-        if overall_score < self.config["quality_threshold"]:
-            logger.warning(f"Final quality score {overall_score}% below threshold {self.config['quality_threshold']}%")
-        
-        if not approved:
-            logger.warning("Content not approved for release by QA agent")
-        
-        logger.info(f"Workflow finalization completed with quality score: {overall_score}%")
         return state
     
-    def _route_next_stage(self, state: WorkflowState, current_stage: WorkflowStage) -> WorkflowStage:
-        """Determine the next stage based on current state."""
+    def _route_after_planning(self, state: WorkflowState) -> str:
+        """Route after planning stage."""
         
-        stage_routing = {
-            WorkflowStage.INIT: WorkflowStage.PLANNING,
-            WorkflowStage.PLANNING: WorkflowStage.CONTENT_CREATION,
-            WorkflowStage.CONTENT_CREATION: WorkflowStage.QUALITY_REVIEW,
-            WorkflowStage.QUALITY_REVIEW: self._route_after_quality_review(state),
-            WorkflowStage.IMPROVEMENT: WorkflowStage.FINALIZATION,
-            WorkflowStage.FINALIZATION: WorkflowStage.COMPLETED
-        }
+        if state["retry_count"] >= self.config["max_retries"]:
+            return "fail"
         
-        return stage_routing.get(current_stage, WorkflowStage.FAILED)
-    
-    def _route_after_quality_review(self, state: WorkflowState) -> WorkflowStage:
-        """Route after quality review based on results."""
+        planning_result = state["planning_result"]
+        if not planning_result:
+            return "retry"
         
-        quality_result = state.get("quality_result", {})
-        overall_score = quality_result.get("overall_score", 0)
-        issues = quality_result.get("issues_found", [])
-        
-        # Check for critical issues that need improvement
-        critical_issues = [issue for issue in issues if issue.get("severity") in ["critical", "major"]]
-        
-        if overall_score < self.config["quality_threshold"] and critical_issues and state["retry_count"] < 2:
-            return WorkflowStage.IMPROVEMENT
+        planning_score = self._calculate_planning_score(planning_result)
+        if planning_score >= self.config["planning_threshold"]:
+            return "continue"
         else:
-            return WorkflowStage.FINALIZATION
+            return "retry"
     
-    async def _handle_stage_error(self, state: WorkflowState, stage: WorkflowStage, error: str) -> WorkflowState:
-        """Handle stage execution errors."""
+    def _route_after_quality_review(self, state: WorkflowState) -> str:
+        """Route after quality review stage."""
         
-        error_info = {
-            "stage": stage.value,
-            "error": error,
-            "timestamp": datetime.utcnow().isoformat(),
-            "retry_count": state["retry_count"]
-        }
+        if state["retry_count"] >= self.config["max_retries"]:
+            return "fail"
         
-        state["errors"].append(error_info)
+        qa_result = state["quality_result"]
+        if not qa_result:
+            return "retry"
         
-        # Log error details
-        logger.error(f"Stage {stage.value} error (attempt {state['retry_count'] + 1}): {error}")
+        quality_score = qa_result.get("overall_score", 0)
         
-        return state
+        if quality_score >= self.config["quality_threshold"]:
+            return "continue"
+        elif quality_score >= 60:  # Threshold for improvement vs retry
+            return "improve"
+        else:
+            return "retry"
     
     def _calculate_planning_score(self, planning_result: Dict[str, Any]) -> float:
-        """Calculate a quality score for the planning result."""
+        """Calculate planning quality score."""
         
-        score = 0
-        max_score = 100
+        if not planning_result:
+            return 0.0
         
-        # Check required fields (40 points)
-        required_fields = ["title", "description", "modules", "learning_objectives"]
-        for field in required_fields:
-            if field in planning_result and planning_result[field]:
-                score += 10
+        score = 0.0
+        total_checks = 0
         
-        # Check modules quality (30 points)
+        # Check for required curriculum components
+        required_components = ["modules", "learning_objectives", "assessment_strategy"]
+        for component in required_components:
+            total_checks += 1
+            if component in planning_result and planning_result[component]:
+                score += 1.0
+        
+        # Check module completeness
         modules = planning_result.get("modules", [])
         if modules:
-            module_score = min(30, len(modules) * 5)  # 5 points per module, max 30
-            score += module_score
+            total_checks += 1
+            avg_module_completeness = sum(
+                1.0 for module in modules 
+                if module.get("title") and module.get("lessons")
+            ) / len(modules)
+            score += avg_module_completeness
         
-        # Check learning objectives (15 points)
-        objectives = planning_result.get("learning_objectives", [])
-        if objectives and len(objectives) >= 3:
-            score += 15
+        return (score / total_checks) * 100 if total_checks > 0 else 0.0
+    
+    def _validate_content_result(self, content_result: Dict[str, Any]) -> bool:
+        """Validate content creation result."""
         
-        # Check vocabulary themes (15 points)
-        vocab_themes = planning_result.get("vocabulary_themes", [])
-        if vocab_themes and len(vocab_themes) >= 2:
-            score += 15
+        if not content_result:
+            return False
         
-        return min(score, max_score)
+        # Check for required content components
+        required_components = ["lessons", "exercises", "assessments"]
+        for component in required_components:
+            if component not in content_result or not content_result[component]:
+                return False
+        
+        return True
+    
+    def _compile_final_course(self, state: WorkflowState) -> Dict[str, Any]:
+        """Compile the final course from all results."""
+        
+        return {
+            "workflow_id": state["workflow_id"],
+            "course_request_id": state["course_request_id"],
+            "company_name": state["course_request"]["company_name"],
+            "curriculum": state["planning_result"],
+            "content": state["content_result"],
+            "quality_report": state["quality_result"],
+            "metadata": {
+                "created_at": state["start_time"],
+                "total_duration": None,  # Would be calculated
+                "quality_score": state["quality_result"].get("overall_score", 0) if state["quality_result"] else 0
+            }
+        }
     
     def _compile_workflow_result(self, state: WorkflowState) -> Dict[str, Any]:
         """Compile the final workflow result."""
@@ -503,74 +418,28 @@ class CourseGenerationWorkflow:
         return {
             "workflow_id": state["workflow_id"],
             "status": state["current_stage"],
-            "course_request_id": state["course_request"]["course_request_id"],
+            "course_request_id": state["course_request_id"],
             "start_time": state["start_time"],
             "completion_time": datetime.utcnow().isoformat(),
             "planning_result": state.get("planning_result"),
             "content_result": state.get("content_result"),
             "quality_result": state.get("quality_result"),
+            "final_course": state.get("final_course"),
             "errors": state["errors"],
-            "retry_count": state["retry_count"],
-            "success": state["current_stage"] == WorkflowStage.COMPLETED,
-            "final_course": self._compile_final_course(state) if state["current_stage"] == WorkflowStage.COMPLETED else None
-        }
-    
-    def _compile_final_course(self, state: WorkflowState) -> Dict[str, Any]:
-        """Compile the final course package."""
-        
-        return {
-            "course_metadata": {
-                "workflow_id": state["workflow_id"],
-                "course_request_id": state["course_request"]["course_request_id"],
-                "created_at": state["start_time"],
-                "completed_at": datetime.utcnow().isoformat(),
-                "quality_score": state["quality_result"].get("overall_score", 0) if state["quality_result"] else 0
-            },
-            "curriculum": state["planning_result"],
-            "content": state["content_result"],
-            "quality_report": state["quality_result"],
-            "status": "approved" if state["quality_result"].get("approved_for_release", False) else "needs_review"
-        }
-    
-    def _log_stage_entry(self, state: WorkflowState, stage: WorkflowStage):
-        """Log stage entry."""
-        
-        workflow_id = state["workflow_id"]
-        self.workflow_history[workflow_id].append({
-            "stage": stage.value,
-            "action": "entered",
-            "timestamp": datetime.utcnow().isoformat(),
             "retry_count": state["retry_count"]
-        })
-        
-        logger.info(f"Workflow {workflow_id} entering stage: {stage.value}")
-    
-    def _log_stage_completion(self, state: WorkflowState, next_stage: WorkflowStage):
-        """Log stage completion."""
-        
-        workflow_id = state["workflow_id"]
-        self.workflow_history[workflow_id].append({
-            "stage": state["current_stage"],
-            "action": "completed",
-            "next_stage": next_stage.value,
-            "timestamp": datetime.utcnow().isoformat()
-        })
-        
-        logger.info(f"Workflow {workflow_id} completed stage: {state['current_stage']} → {next_stage.value}")
+        }
     
     async def retry_stage(self, workflow_id: str, stage: str) -> Dict[str, Any]:
-        """Retry a specific workflow stage."""
+        """Retry a failed workflow stage."""
         
-        # This would be implemented to retry specific stages
+        # This would need to be implemented with proper state management
         # For now, return a placeholder
         return {
-            "workflow_id": workflow_id,
-            "stage": stage,
-            "retry_status": "not_implemented",
-            "message": "Stage retry functionality to be implemented"
+            "success": False,
+            "error": "Retry functionality not yet implemented"
         }
     
     def get_workflow_history(self, workflow_id: str) -> List[Dict[str, Any]]:
-        """Get the execution history for a workflow."""
+        """Get workflow execution history."""
         
         return self.workflow_history.get(workflow_id, [])

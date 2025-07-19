@@ -3,14 +3,20 @@ Auth Domain - Models
 Consolidated from: user.py, server_models_user.py
 """
 
-from app import db
 from app.core.database import Base
 from datetime import datetime
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Table, Boolean, Enum, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash, check_password_hash
+
+# Association table for user roles
+user_roles = Table(
+    'user_roles',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id')),
+    Column('role_id', Integer, ForeignKey('roles.id'))
+)
 
 class User(Base):
     __tablename__ = 'users'
@@ -94,37 +100,37 @@ role_permissions = Table(
     Column('role_id', Integer, ForeignKey('roles.id')),
     Column('permission_id', Integer, ForeignKey('permissions.id'))
 ) 
-class User(db.Model):
-    """User model for authentication and authorization."""
+class UserExtended(Base):
+    """Extended User model for authentication and authorization."""
     
-    __tablename__ = 'users'
+    __tablename__ = 'users_extended'
     
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False, index=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    role = db.Column(db.Enum(
+    id = Column(Integer, primary_key=True)
+    username = Column(String(80), unique=True, nullable=False, index=True)
+    email = Column(String(120), unique=True, nullable=False, index=True)
+    password_hash = Column(String(255), nullable=False)
+    role = Column(Enum(
         'admin', 'sales', 'course_manager', 'trainer', 'student',
         name='user_roles'
     ), nullable=False, default='student')
     
     # Profile information
-    first_name = db.Column(db.String(100))
-    last_name = db.Column(db.String(100))
-    phone = db.Column(db.String(20))
-    avatar_url = db.Column(db.String(255))
+    first_name = Column(String(100))
+    last_name = Column(String(100))
+    phone = Column(String(20))
+    avatar_url = Column(String(255))
     
     # Status and metadata
-    is_active = db.Column(db.Boolean, default=True, nullable=False)
-    is_verified = db.Column(db.Boolean, default=False, nullable=False)
-    last_login = db.Column(db.DateTime)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = Column(Boolean, default=True, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    last_login = Column(DateTime)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
-    course_requests = db.relationship('CourseRequest', backref='sales_rep', lazy='dynamic')
-    trainer_assignments = db.relationship('TrainerAssignment', backref='trainer', lazy='dynamic')
-    student_enrollments = db.relationship('StudentEnrollment', backref='student', lazy='dynamic')
+    course_requests = relationship('CourseRequest', back_populates='sales_rep', lazy='dynamic')
+    trainer_assignments = relationship('TrainerAssignment', back_populates='trainer', lazy='dynamic')
+    student_enrollments = relationship('StudentEnrollment', back_populates='student', lazy='dynamic')
     
     def __init__(self, username, email, password, role='student', **kwargs):
         self.username = username
@@ -148,7 +154,7 @@ class User(db.Model):
     def update_last_login(self):
         """Update the last login timestamp."""
         self.last_login = datetime.utcnow()
-        db.session.commit()
+        # Note: session commit should be handled by the service layer
     
     @property
     def full_name(self):
@@ -265,42 +271,42 @@ class User(db.Model):
 
 
 
-class UserSession(db.Model):
+class UserSession(Base):
     """Track user sessions for security and analytics."""
     
     __tablename__ = 'user_sessions'
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    session_token = db.Column(db.String(255), unique=True, nullable=False)
-    ip_address = db.Column(db.String(45))  # IPv6 compatible
-    user_agent = db.Column(db.Text)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    session_token = Column(String(255), unique=True, nullable=False)
+    ip_address = Column(String(45))  # IPv6 compatible
+    user_agent = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
     
     # Relationship
-    user = db.relationship('User', backref='sessions')
+    user = relationship('User', back_populates='sessions')
     
     def __repr__(self):
         return f'<UserSession {self.user.username} - {self.ip_address}>'
 
 
 
-class PasswordResetToken(db.Model):
+class PasswordResetToken(Base):
     """Manage password reset tokens."""
     
     __tablename__ = 'password_reset_tokens'
     
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    token = db.Column(db.String(255), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    is_used = db.Column(db.Boolean, default=False, nullable=False)
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)
+    token = Column(String(255), unique=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    is_used = Column(Boolean, default=False, nullable=False)
     
     # Relationship
-    user = db.relationship('User', backref='reset_tokens')
+    user = relationship('User', back_populates='reset_tokens')
     
     @property
     def is_expired(self):

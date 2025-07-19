@@ -5,9 +5,7 @@ Consolidated from: auth_service.py, user_service.py
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.domains.auth.models import User
 from app.domains.auth.models import User, Role, Permission
-from app.domains.auth.services import AuthService
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -16,8 +14,13 @@ from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
-from typing import Optional, Dict
 import jwt
+
+# Password hashing context
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# Security scheme for FastAPI
+security = HTTPBearer()
 
 class AuthService:
     @staticmethod

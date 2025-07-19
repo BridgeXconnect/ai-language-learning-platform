@@ -3,12 +3,11 @@ Sales Domain - Routes
 Consolidated from: sales_routes.py, server_routes_sales.py
 """
 
-from app import db
 from app.core.database import get_db
 from app.middleware.auth_middleware import require_auth, require_roles
 from app.domains.courses.models import CourseRequest, SOPDocument, CEFRLevel, CourseRequestStatus
 from app.domains.auth.models import User
-from app.domains.sales.schemas import (
+from app.domains.sales.schemas import *
 from app.domains.auth.services import AuthService
 from app.services.file_service import save_uploaded_file, allowed_file
 from app.services.notification_service import notify_course_manager_new_request
