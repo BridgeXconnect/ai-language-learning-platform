@@ -1,48 +1,12 @@
-# ===================================================================
-# AI Language Learning Platform - .gitignore
-# ===================================================================
-
-# Environment Variables
-.env
-.env.local
-.env.development
-.env.staging
-.env.production
-*.env
-
-# Database
-*.db
-*.sqlite
-*.sqlite3
-
-# Logs
-logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
 # Dependencies
 node_modules/
 */node_modules/
-venv/
-env/
-*/venv/
-*/env/
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -56,18 +20,20 @@ parts/
 sdist/
 var/
 wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-# Python virtual environments
-.venv
+# Virtual environments
 .env
-.venv/
-.env/
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.poetry/
 
 # IDEs
 .vscode/
@@ -76,7 +42,7 @@ MANIFEST
 *.swo
 *~
 
-# OS generated files
+# OS
 .DS_Store
 .DS_Store?
 ._*
@@ -85,111 +51,29 @@ MANIFEST
 ehthumbs.db
 Thumbs.db
 
-# Build outputs
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+
+# Production builds
 build/
 dist/
-*/build/
-*/dist/
 
-# Test coverage
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Uploads and temporary files
-uploads/
-temp/
-tmp/
-*.tmp
-
-# Docker
-.dockerignore
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# Celery
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# Next.js
-.next/
-out/
-
-# Nuxt.js
-.nuxt
-dist
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
-tmp/
-temp/
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# ===================================================================
-# Project Specific
-# ===================================================================
-
-# AI Language Learning Platform specific
-*.json.bak
-*_backup.*
-test_uploads/
-
-# Logs directory
-logs/
-
-# Temporary files
-temp/
-
-# Legacy scripts
-scripts/legacy/
-
-# Archived documentation
-docs/archived/
-docs/progress-reports/
-
+# Coverage
+coverage/
+*.lcov
+.nyc_output
